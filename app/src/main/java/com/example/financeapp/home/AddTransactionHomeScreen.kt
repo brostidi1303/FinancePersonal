@@ -55,7 +55,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
-import com.example.financeapp.Category
+import com.example.financeapp.data.APP_CATEGORIES
+import com.example.financeapp.data.Category
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -63,9 +64,9 @@ import java.util.Locale
 @Composable
 fun AddTransactionHomeScreen(
     onDismiss: () -> Unit,
-    onAddTransaction: (Double, Boolean, String) -> Unit
+    onAddTransaction: (Double, Category, Boolean, String, String) -> Unit  // ✅ THÊM THAM SỐ note
 ) {
-    var amount by remember { mutableStateOf("0") }
+    var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var note by remember { mutableStateOf("") }
     var isNoteEditing by remember { mutableStateOf(false) }
@@ -78,22 +79,9 @@ fun AddTransactionHomeScreen(
 
     val context = LocalContext.current
 
-// Format để hiển thị
+    // Format để hiển thị
     val dateLabel = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selectedDate.time)
     val timeLabel = SimpleDateFormat("HH:mm", Locale.getDefault()).format(selectedDate.time)
-
-    val categories = remember {
-        listOf(
-            Category(1, "Ăn uống", Icons.Default.Star, Color(0xFF5B7FFF)),
-            Category(2, "Cà phê", Icons.Default.Star, Color(0xFF4A5568)),
-            Category(3, "Mua sắm", Icons.Default.ShoppingCart, Color(0xFF4A5568)),
-            Category(4, "Di chuyển", Icons.Default.Star, Color(0xFF4A5568)),
-            Category(5, "Hóa đơn", Icons.Default.DateRange, Color(0xFF4A5568)),
-            Category(6, "Giải trí", Icons.Default.Star, Color(0xFF4A5568)),
-            Category(7, "Y tế", Icons.Default.Add, Color(0xFF4A5568)),
-            Category(8, "Khác", Icons.Default.Share, Color(0xFF4A5568))
-        )
-    }
 
     // Date Picker Dialog
     if (showDatePicker) {
@@ -125,7 +113,7 @@ fun AddTransactionHomeScreen(
             },
             selectedDate.get(Calendar.HOUR_OF_DAY),
             selectedDate.get(Calendar.MINUTE),
-            true // true = 24h format
+            true
         ).apply {
             setOnDismissListener { showTimePicker = false }
             show()
@@ -168,7 +156,7 @@ fun AddTransactionHomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 30.dp),
+                    .padding(start = 20.dp, end = 20.dp, bottom = 15.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -182,14 +170,11 @@ fun AddTransactionHomeScreen(
                 BasicTextField(
                     value = amount,
                     onValueChange = { newValue ->
-                        // Loại bỏ tất cả dấu chấm
                         val digitsOnly = newValue.replace(".", "")
 
-                        // Chỉ cho phép nhập số và không quá 15 ký tự
                         if (digitsOnly.all { it.isDigit() } && digitsOnly.length <= 15) {
-                            // Format lại với dấu chấm ngăn cách hàng nghìn
                             amount = if (digitsOnly.isEmpty()) {
-                                "0"
+                                ""
                             } else {
                                 digitsOnly.toLongOrNull()?.let { number ->
                                     String.format("%,d", number).replace(",", ".")
@@ -214,13 +199,16 @@ fun AddTransactionHomeScreen(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(modifier = Modifier.weight(1f, fill = false)) {
-                                if (amount.isEmpty() || amount == "0") {
+                            Box(
+                                modifier = Modifier.weight(1f, fill = false),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (amount.isEmpty()) {
                                     Text(
-                                        text = "0",
+                                        text = "500.000",
                                         fontSize = 48.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Gray,
+                                        color = Color.White.copy(alpha = 0.3f),
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -245,13 +233,12 @@ fun AddTransactionHomeScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Ô chọn Ngày
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(CardBackground)
-                        .clickable { showDatePicker = true } // Click để chọn ngày
+                        .clickable { showDatePicker = true }
                         .padding(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -270,13 +257,12 @@ fun AddTransactionHomeScreen(
                     }
                 }
 
-                // Ô chọn Giờ
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .background(CardBackground)
-                        .clickable { showTimePicker = true } // Click để chọn giờ
+                        .clickable { showTimePicker = true }
                         .padding(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -306,62 +292,45 @@ fun AddTransactionHomeScreen(
                     .clip(RoundedCornerShape(12.dp))
                     .background(CardBackground)
                     .clickable { isNoteEditing = true }
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
-                if (isNoteEditing || note.isNotEmpty()) {
-                    TextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        placeholder = {
-                            Text(
-                                text = "Thêm ghi chú...",
-                                color = Color.Gray,
-                                fontSize = 14.sp
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = PrimaryBlue,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 14.sp,
-                            color = Color.White
+                TextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    placeholder = {
+                        Text(
+                            text = "Thêm ghi chú...",
+                            color = Color.Gray,
+                            fontSize = 14.sp
                         )
-                    )
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    },
+                    leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
                             tint = Color.Gray,
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Thêm ghi chú...",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = PrimaryBlue,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Category Section
             Column(
@@ -397,7 +366,7 @@ fun AddTransactionHomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.height(200.dp)
                 ) {
-                    items(categories) { category ->
+                    items(APP_CATEGORIES) { category ->
                         CategoryItem1(
                             category = category,
                             isSelected = selectedCategory == category,
@@ -414,14 +383,17 @@ fun AddTransactionHomeScreen(
                 onClick = {
                     val amountValue = amount.replace(".", "").toDoubleOrNull() ?: 0.0
 
-                    // Tạo chuỗi ngày tháng để lưu vào List
+                    // Tạo chuỗi ngày tháng
                     val finalDateLabel = if (isToday(selectedDate)) {
-                        "Hôm nay, $timeLabel" // Kết quả: "Hôm nay, 10:45"
+                        "Hôm nay, $timeLabel"
                     } else {
-                        "$dateLabel, $timeLabel" // Kết quả: "06/02/2026, 10:45"
+                        "$dateLabel, $timeLabel"
                     }
-                    // Truyền thêm finalDateLabel vào hàm
-                    onAddTransaction(amountValue, isIncome, finalDateLabel)
+
+                    // ✅ TRUYỀN THÊM note VÀO CALLBACK
+                    selectedCategory?.let { category ->
+                        onAddTransaction(amountValue, category, isIncome, finalDateLabel, note)
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

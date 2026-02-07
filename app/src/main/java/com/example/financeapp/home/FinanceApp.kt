@@ -1,6 +1,7 @@
 package com.example.financeapp.home
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -33,9 +34,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.financeapp.Category
 import com.example.financeapp.PreferencesManager
 import com.example.financeapp.R
+import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.formatCurrency
 import com.example.financeapp.viewModel.FinanceViewModel
@@ -130,19 +131,20 @@ fun FinanceApp(
         if (showAddTransaction) {
             AddTransactionHomeScreen(
                 onDismiss = { showAddTransaction = false },
-                onAddTransaction = { amount, isIncome, formattedDate -> // Nhận thêm formattedDate
-                    // Tạo transaction mới với ngày giờ thực tế đã chọn
+                onAddTransaction = { amount, category, isIncome, formattedDate, note -> // ✅ THÊM category
+                    // Tạo transaction mới với thông tin từ category
                     val newTransaction = Transaction(
                         id = transactions.size + 1,
-                        title = if (isIncome) "Thu nhập" else "Chi tiêu",
-                        date = formattedDate, // LƯU NGÀY GIỜ THỰC TẾ Ở ĐÂY
+                        title = category.name,        // ✅ Lấy tên từ category
+                        date = formattedDate,
                         amount = amount,
-                        icon = if (isIncome) Icons.Default.Add else Icons.Default.ShoppingCart,
-                        iconColor = if (isIncome) GreenPositive else RedNegative,
-                        isIncome = isIncome
+                        icon = category.icon,         // ✅ Lấy icon từ category
+                        iconColor = category.color,   // ✅ Lấy màu từ category
+                        isIncome = isIncome,
+                        note = note
                     )
 
-                    // Lưu vào ViewModel/List của bạn
+                    // Lưu vào ViewModel
                     financeViewModel.addTransaction(newTransaction)
 
                     showAddTransaction = false
@@ -222,25 +224,26 @@ fun BalanceCard(
     initialBalance: Double,
     onAddClick: () -> Unit
 ) {
-    // LOGIC MỚI: Tính phần trăm thay đổi
     val percentage = when {
-        // Trường hợp 1: Chưa có tiền ban đầu (initialBalance = 0)
-        initialBalance == 0.0 -> {
-            if (totalBalance > 0.0) {
-                100.0  // ✅ Có tiền rồi → Hiển thị +100%
-            } else {
-                0.0    // Vẫn chưa có gì → 0%
-            }
+        // ⭐ CASE ĐẶC BIỆT: totalBalance == initialBalance
+        initialBalance > 0.0 && totalBalance == initialBalance -> {
+            100.0  // ✅ Hiển thị +100%
         }
-        // Trường hợp 2: Đã có initial balance, tính % thay đổi
-        totalBalance >= initialBalance -> {
+        // Chưa có gì
+        initialBalance == 0.0 -> {
+            0.0
+        }
+        // Tăng so với ban đầu
+        totalBalance > initialBalance -> {
             ((totalBalance - initialBalance) / initialBalance * 100)
         }
-        // Trường hợp 3: Số dư giảm so với ban đầu
+        // Giảm so với ban đầu
         else -> {
             -((initialBalance - totalBalance) / initialBalance * 100)
         }
     }
+
+    Log.d("BalanceCard", "totalBalance: $totalBalance, initialBalance: $initialBalance, percentage: $percentage")
 
     Box(
         modifier = Modifier
@@ -275,8 +278,8 @@ fun BalanceCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Hiển thị phần trăm (chỉ khi có totalBalance > 0)
-                if (totalBalance > 0.0) {
+                // Hiển thị phần trăm (chỉ khi có initial balance)
+                if (initialBalance >= 0.0) {
                     Row(
                         modifier = Modifier
                             .width(80.dp)
@@ -374,7 +377,7 @@ fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Share,
+                            painterResource(R.drawable.trending),
                             contentDescription = null,
                             tint = RedNegative,
                             modifier = Modifier.size(14.dp)
@@ -487,8 +490,8 @@ fun TransactionItem(transaction: Transaction) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = transaction.icon,
-                        contentDescription = null,
+                        painter = painterResource(id = transaction.icon),
+                        contentDescription = transaction.title,
                         tint = transaction.iconColor,
                         modifier = Modifier.size(24.dp)
                     )
@@ -503,11 +506,24 @@ fun TransactionItem(transaction: Transaction) {
                         fontWeight = FontWeight.Medium,
                         color = Color.White
                     )
-                    Text(
-                        text = transaction.date,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.5f)
-                    )
+                    Row(
+                        modifier = Modifier,
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                        Text(
+                            text = transaction.note,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        Text(
+                            text = transaction.date,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
 
@@ -529,19 +545,24 @@ fun CategoryItem1(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(4.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(60.dp)
                 .clip(CircleShape)
+                // Khi được chọn, dùng màu của category làm nền. Khi không chọn, dùng màu tối của card.
                 .background(if (isSelected) category.color else CardBackground),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = category.icon,
+                painter = painterResource(id = category.icon),
                 contentDescription = category.name,
-                tint = Color.White,
+                // QUAN TRỌNG: Khi nền đã có màu category, icon nên là màu Trắng để nổi bật.
+                // Khi chưa chọn, icon có thể là màu xám hoặc trắng mờ.
+                tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -549,9 +570,11 @@ fun CategoryItem1(
         Text(
             text = category.name,
             fontSize = 11.sp,
-            color = Color.White,
+            // Chữ cũng có thể đổi màu khi chọn để người dùng dễ nhận biết
+            color = if (isSelected) category.color else Color.White.copy(alpha = 0.8f),
             textAlign = TextAlign.Center,
-            maxLines = 1
+            maxLines = 1,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }

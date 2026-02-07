@@ -2,21 +2,23 @@ package com.example.financeapp
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.financeapp.data.Transaction
-import com.example.financeapp.home.GreenPositive
-import com.example.financeapp.home.RedNegative
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.TypeAdapter
 import com.google.gson.reflect.TypeToken
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonWriter
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("finance_app_prefs", Context.MODE_PRIVATE)
-    private val gson = Gson()
+
+    // Gson với custom TypeAdapter cho Color
+    private val gson: Gson = GsonBuilder()
+        .registerTypeAdapter(Color::class.java, ColorTypeAdapter())
+        .create()
 
     companion object {
         private const val KEY_TOTAL_BALANCE = "total_balance"
@@ -42,19 +44,17 @@ class PreferencesManager(context: Context) {
         return prefs.getFloat(KEY_INITIAL_BALANCE, 0f).toDouble()
     }
 
-    // Lưu danh sách transactions
+    // Lưu danh sách transactions - TRỰC TIẾP với Transaction class
     fun saveTransactions(transactions: List<Transaction>) {
-        val transactionDataList = transactions.map { it.toTransactionData() }
-        val json = gson.toJson(transactionDataList)
+        val json = gson.toJson(transactions)
         prefs.edit().putString(KEY_TRANSACTIONS, json).apply()
     }
 
-    // Lấy danh sách transactions
+    // Lấy danh sách transactions - TRỰC TIẾP với Transaction class
     fun getTransactions(): List<Transaction> {
         val json = prefs.getString(KEY_TRANSACTIONS, null) ?: return emptyList()
-        val type = object : TypeToken<List<TransactionData>>() {}.type
-        val transactionDataList: List<TransactionData> = gson.fromJson(json, type)
-        return transactionDataList.map { it.toTransaction() }
+        val type = object : TypeToken<List<Transaction>>() {}.type
+        return gson.fromJson(json, type)
     }
 
     // Clear all data
@@ -63,50 +63,23 @@ class PreferencesManager(context: Context) {
     }
 }
 
-// Data class để serialize/deserialize (vì ImageVector và Color không thể lưu trực tiếp)
-data class TransactionData(
-    val id: Int,
-    val title: String,
-    val date: String,
-    val amount: Double,
-    val iconName: String, // Lưu tên icon thay vì ImageVector
-    val iconColorHex: String, // Lưu màu dưới dạng hex string
-    val isIncome: Boolean
-)
+// Custom TypeAdapter để serialize/deserialize Color
+class ColorTypeAdapter : TypeAdapter<Color>() {
+    override fun write(out: JsonWriter, value: Color?) {
+        if (value == null) {
+            out.nullValue()
+        } else {
+            // Lưu Color dưới dạng hex string
+            out.value(String.format("#%08X", value.value.toInt()))
+        }
+    }
 
-// Extension functions để chuyển đổi giữa Transaction và TransactionData
-fun Transaction.toTransactionData(): TransactionData {
-    return TransactionData(
-        id = this.id,
-        title = this.title,
-        date = this.date,
-        amount = this.amount,
-        iconName = when (this.icon) {
-            Icons.Default.Add -> "Add"
-            Icons.Default.ShoppingCart -> "ShoppingCart"
-            else -> "Default"
-        },
-        iconColorHex = String.format("#%08X", this.iconColor.value.toInt()),
-        isIncome = this.isIncome
-    )
-}
-
-fun TransactionData.toTransaction(): Transaction {
-    return Transaction(
-        id = this.id,
-        title = this.title,
-        date = this.date,
-        amount = this.amount,
-        icon = when (this.iconName) {
-            "Add" -> Icons.Default.Add
-            "ShoppingCart" -> Icons.Default.ShoppingCart
-            else -> Icons.Default.Add
-        },
-        iconColor = try {
-            Color(android.graphics.Color.parseColor(this.iconColorHex))
+    override fun read(`in`: JsonReader): Color {
+        val colorString = `in`.nextString()
+        return try {
+            Color(android.graphics.Color.parseColor(colorString))
         } catch (e: Exception) {
-            if (this.isIncome) GreenPositive else RedNegative
-        },
-        isIncome = this.isIncome
-    )
+            Color.Gray // Default color nếu parse lỗi
+        }
+    }
 }

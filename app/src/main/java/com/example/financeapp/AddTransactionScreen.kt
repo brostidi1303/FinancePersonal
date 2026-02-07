@@ -1,5 +1,6 @@
 package com.example.financeapp
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,30 +19,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.financeapp.data.APP_CATEGORIES
+import com.example.financeapp.data.Category
+import com.example.financeapp.data.Wallet
 import com.example.financeapp.home.CardBackground
 import com.example.financeapp.home.DarkBackground
 import com.example.financeapp.home.PrimaryBlue
 import java.text.SimpleDateFormat
 import java.util.*
 
-data class Category(
-    val id: Int,
-    val name: String,
-    val icon: ImageVector,
-    val color: Color
-)
-
-data class Wallet(
-    val id: Int,
-    val name: String,
-    val balance: Double
-)
 
 @Composable
 fun AddTransactionScreen(
@@ -55,18 +48,10 @@ fun AddTransactionScreen(
     var showWalletPicker by remember { mutableStateOf(false) }
     var selectedWallet by remember { mutableStateOf(getDefaultWallet()) }
 
-    val categories = remember {
-        listOf(
-            Category(1, "Ăn uống", Icons.Default.Share, Color(0xFF4169E1)),
-            Category(2, "Di chuyển", Icons.Default.Share, Color(0xFF64748B)),
-            Category(3, "Mua sắm", Icons.Default.Share, Color(0xFF64748B)),
-            Category(4, "Giải trí", Icons.Default.Share, Color(0xFF64748B)),
-        )
-    }
 
     // Set default category
     LaunchedEffect(Unit) {
-        selectedCategory = categories.first()
+        selectedCategory = APP_CATEGORIES.first()
     }
 
     Box(
@@ -161,7 +146,7 @@ fun AddTransactionScreen(
 
             // Category Selection
             CategorySection(
-                categories = categories,
+                categories = APP_CATEGORIES,
                 selectedCategory = selectedCategory,
                 onCategorySelected = { selectedCategory = it }
             )
@@ -288,8 +273,10 @@ fun CategoryItem(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = category.icon,
+                // Nếu iconRes là Int (R.drawable.xxx)
+                painter = painterResource(id = category.icon),
                 contentDescription = category.name,
+                // Icon hỗ trợ thuộc tính tint trực tiếp
                 tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(28.dp)
             )
