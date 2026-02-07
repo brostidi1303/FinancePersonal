@@ -1,6 +1,7 @@
 package com.example.financeapp.viewModel
 
 import android.app.Application
+import android.icu.text.SimpleDateFormat
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 class FinanceViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -174,4 +177,160 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             it.title.contains(query, ignoreCase = true)
         }
     }
+
+    /**
+     * Tính tổng chi tiêu trong tháng hiện tại
+     */
+    fun getMonthlyExpense(): Double {
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        return _transactions
+            .filter { !it.isIncome }  // Chỉ lấy expense
+            .filter { transaction ->
+                val transactionDate = parseTransactionDate(transaction.date)
+                transactionDate?.let {
+                    it.get(Calendar.MONTH) == currentMonth &&
+                            it.get(Calendar.YEAR) == currentYear
+                } ?: false
+            }
+            .sumOf { it.amount }
+    }
+
+    /**
+     * Tính tổng chi tiêu tháng trước
+     */
+    fun getLastMonthExpense(): Double {
+        val calendar = Calendar.getInstance()
+        val lastMonth = if (calendar.get(Calendar.MONTH) == 0) 11 else calendar.get(Calendar.MONTH) - 1
+        val lastMonthYear = if (calendar.get(Calendar.MONTH) == 0) {
+            calendar.get(Calendar.YEAR) - 1
+        } else {
+            calendar.get(Calendar.YEAR)
+        }
+
+        return _transactions
+            .filter { !it.isIncome }
+            .filter { transaction ->
+                val transactionDate = parseTransactionDate(transaction.date)
+                transactionDate?.let {
+                    it.get(Calendar.MONTH) == lastMonth &&
+                            it.get(Calendar.YEAR) == lastMonthYear
+                } ?: false
+            }
+            .sumOf { it.amount }
+    }
+
+    /**
+     * Lấy chi tiêu theo tuần trong tháng hiện tại
+     * @return Map<Int, Double> - Key: số tuần (1-4), Value: tổng chi tiêu
+     */
+    fun getWeeklyExpense(): Map<Int, Double> {
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        // Lấy số ngày trong tháng
+        val lastDay = Calendar.getInstance().apply {
+            set(Calendar.YEAR, currentYear)
+            set(Calendar.MONTH, currentMonth)
+            set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
+        }.get(Calendar.DAY_OF_MONTH)
+
+        val daysPerWeek = lastDay / 4
+
+        val weeklyExpense = mutableMapOf<Int, Double>()
+
+        for (week in 1..4) {
+            val weekStart = (week - 1) * daysPerWeek + 1
+            val weekEnd = if (week == 4) lastDay else week * daysPerWeek
+
+            val weekTotal = _transactions
+                .filter { !it.isIncome }
+                .filter { transaction ->
+                    val transactionDate = parseTransactionDate(transaction.date)
+                    transactionDate?.let { cal ->
+                        cal.get(Calendar.MONTH) == currentMonth &&
+                                cal.get(Calendar.YEAR) == currentYear &&
+                                cal.get(Calendar.DAY_OF_MONTH) in weekStart..weekEnd
+                    } ?: false
+                }
+                .sumOf { it.amount }
+
+            weeklyExpense[week] = weekTotal
+        }
+
+        return weeklyExpense
+    }
+
+    /**
+     * Parse date string từ transaction
+     * Hỗ trợ nhiều format:
+     * - "Hôm nay, HH:mm"
+     * - "dd/MM/yyyy, HH:mm"
+     * - "dd ThMM, HH:mm"
+     */
+    private fun parseTransactionDate(dateString: String): Calendar? {
+        // Case 1: "Hôm nay, HH:mm"
+        if (dateString.startsWith("Hôm nay")) {
+            return Calendar.getInstance()
+        }
+
+        // Case 2: "dd/MM/yyyy, HH:mm" hoặc "dd/MM/yyyy"
+        val formats = listOf(
+            "dd/MM/yyyy, HH:mm",
+            "dd/MM/yyyy",
+            "dd 'Th'MM, HH:mm"
+        )
+
+        for (pattern in formats) {
+            try {
+                val sdf = SimpleDateFormat(pattern, Locale("vi", "VN"))
+                val date = sdf.parse(dateString)
+                if (date != null) {
+                    return Calendar.getInstance().apply { time = date }
+                }
+            } catch (e: Exception) {
+                continue
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Lấy transactions trong khoảng thời gian
+     */
+    fun getTransactionsBetween(startDate: Calendar, endDate: Calendar): List<Transaction> {
+        return _transactions.filter { transaction ->
+            val transactionDate = parseTransactionDate(transaction.date)
+            transactionDate?.let {
+                it.timeInMillis >= startDate.timeInMillis &&
+                        it.timeInMillis <= endDate.timeInMillis
+            } ?: false
+        }
+    }
+
+    /**
+     * Lấy chi tiêu theo category trong tháng hiện tại
+     */
+    fun getMonthlyExpenseByCategory(): Map<String, Double> {
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        return _transactions
+            .filter { !it.isIncome }
+            .filter { transaction ->
+                val transactionDate = parseTransactionDate(transaction.date)
+                transactionDate?.let {
+                    it.get(Calendar.MONTH) == currentMonth &&
+                            it.get(Calendar.YEAR) == currentYear
+                } ?: false
+            }
+            .groupBy { it.title }  // Group by category name
+            .mapValues { entry -> entry.value.sumOf { it.amount } }
+    }
+
 }

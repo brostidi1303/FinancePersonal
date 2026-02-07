@@ -347,128 +347,6 @@ fun BalanceCard(
 }
 
 @Composable
-fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
-    // Tính tổng chi tiêu trong tháng từ ViewModel
-    val monthlyExpense = financeViewModel.getTotalExpense()
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(CardBackground)
-            .padding(20.dp)
-    ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Monthly Spending",
-                    fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(RedNegative.copy(alpha = 0.2f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painterResource(R.drawable.trending),
-                            contentDescription = null,
-                            tint = RedNegative,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "-5%",
-                            fontSize = 12.sp,
-                            color = RedNegative,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "${formatCurrency(monthlyExpense)} đ",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            SpendingChart()
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                listOf("Week 1", "Week 2", "Week 3", "Week 4").forEach { week ->
-                    Text(
-                        text = week,
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SpendingChart() {
-    val data = remember {
-        listOf(0.4f, 0.7f, 0.5f, 0.6f, 0.3f, 0.5f, 0.4f, 0.8f, 0.3f, 0.5f)
-    }
-
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-    ) {
-        val width = size.width
-        val height = size.height
-        val spacing = width / (data.size - 1)
-
-        val path = Path().apply {
-            data.forEachIndexed { index, value ->
-                val x = index * spacing
-                val y = height - (value * height)
-
-                if (index == 0) {
-                    moveTo(x, y)
-                } else {
-                    val prevX = (index - 1) * spacing
-                    val prevY = height - (data[index - 1] * height)
-                    val controlX1 = prevX + spacing / 2
-                    val controlY1 = prevY
-                    val controlX2 = x - spacing / 2
-                    val controlY2 = y
-
-                    cubicTo(controlX1, controlY1, controlX2, controlY2, x, y)
-                }
-            }
-        }
-
-        drawPath(
-            path = path,
-            color = PrimaryBlue,
-            style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
-        )
-    }
-}
-
-@Composable
 fun TransactionItem(transaction: Transaction) {
     Box(
         modifier = Modifier
@@ -500,31 +378,24 @@ fun TransactionItem(transaction: Transaction) {
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column {
+                Column(
+                    modifier = Modifier,
+                    verticalArrangement = Arrangement.Center
+                ){
                     Text(
                         text = transaction.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.White
                     )
-                    Row(
-                        modifier = Modifier,
-                        verticalAlignment = Alignment.CenterVertically
-                    ){
-                        Text(
-                            text = transaction.note,
-                            fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f)
-                        )
 
-                        Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
 
-                        Text(
-                            text = transaction.date,
-                            fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f)
-                        )
-                    }
+                    Text(
+                        text = transaction.date,
+                        fontSize = 13.sp,
+                        color = Color.White.copy(alpha = 0.5f)
+                    )
                 }
             }
 
