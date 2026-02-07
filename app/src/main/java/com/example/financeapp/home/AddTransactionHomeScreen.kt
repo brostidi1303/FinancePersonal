@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,13 +65,14 @@ import java.util.Locale
 @Composable
 fun AddTransactionHomeScreen(
     onDismiss: () -> Unit,
+    defaultIsIncome: Boolean = true,
     onAddTransaction: (Double, Category, Boolean, String, String) -> Unit  // ✅ THÊM THAM SỐ note
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var note by remember { mutableStateOf("") }
     var isNoteEditing by remember { mutableStateOf(false) }
-    var isIncome by remember { mutableStateOf(true) }
+    var isIncome by remember { mutableStateOf(defaultIsIncome) }
 
     // Khởi tạo với thời gian hiện tại
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
@@ -171,37 +173,32 @@ fun AddTransactionHomeScreen(
                     value = amount,
                     onValueChange = { newValue ->
                         val digitsOnly = newValue.replace(".", "")
-
                         if (digitsOnly.all { it.isDigit() } && digitsOnly.length <= 15) {
-                            amount = if (digitsOnly.isEmpty()) {
-                                ""
-                            } else {
-                                digitsOnly.toLongOrNull()?.let { number ->
-                                    String.format("%,d", number).replace(",", ".")
-                                } ?: amount
-                            }
+                            amount = if (digitsOnly.isEmpty()) ""
+                            else digitsOnly.toLongOrNull()?.let {
+                                String.format("%,d", it).replace(",", ".")
+                            } ?: amount
                         }
                     },
+                    // 1. Quan trọng: TextStyle phải căn giữa
                     textStyle = androidx.compose.ui.text.TextStyle(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         textAlign = TextAlign.Center
                     ),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     cursorBrush = SolidColor(PrimaryBlue),
                     singleLine = true,
                     decorationBox = { innerTextField ->
+                        // Row này bao quát toàn bộ chiều rộng
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            horizontalArrangement = Arrangement.Center // Căn giữa nội dung Row
                         ) {
                             Box(
-                                modifier = Modifier.weight(1f, fill = false),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center // 2. Căn giữa Placeholder và TextField bên trong Box
                             ) {
                                 if (amount.isEmpty()) {
                                     Text(
@@ -212,123 +209,40 @@ fun AddTransactionHomeScreen(
                                         textAlign = TextAlign.Center
                                     )
                                 }
-                                innerTextField()
+                                innerTextField() // Nội dung nhập liệu sẽ đè lên trên placeholder
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
+
                             Text(
                                 text = "đ",
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
+                                modifier = Modifier.padding(end = 12.dp)
                             )
                         }
                     }
                 )
             }
 
-            // Date and Time Section
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CardBackground)
-                        .clickable { showDatePicker = true }
-                        .padding(16.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = if (isToday(selectedDate)) "Hôm nay" else dateLabel,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
+            // Date Selection
+            SelectionCard(
+                icon = Icons.Default.DateRange,
+                iconColor = Color(0xFFE74C3C),
+                title = "Ngày giao dịch",
+                value = if (isToday(selectedDate)) "Hôm nay" else dateLabel,
+                onClick = { showDatePicker = true }
+            )
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CardBackground)
-                        .clickable { showTimePicker = true }
-                        .padding(16.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.clock),
-                            contentDescription = null,
-                            tint = Color(0xFFFF8C42),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = timeLabel,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Note Section
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CardBackground)
-                    .clickable { isNoteEditing = true }
-                    .padding(12.dp)
-            ) {
-                TextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    placeholder = {
-                        Text(
-                            text = "Thêm ghi chú...",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = PrimaryBlue,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 14.sp,
-                        color = Color.White
-                    )
-                )
-            }
+            // Wallet Selection
+            SelectionCard(
+                icon = Icons.Default.DateRange,
+                iconColor = Color(0xFF3498DB),
+                title = "Thời gian giao dịch",
+                value = timeLabel,
+                onClick = { showTimePicker = true }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -420,4 +334,63 @@ fun isToday(calendar: Calendar): Boolean {
     val today = Calendar.getInstance()
     return calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
             calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+}
+
+@Composable
+fun SelectionCard(
+    icon: ImageVector,
+    iconColor: Color,
+    title: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+        }
+    }
 }

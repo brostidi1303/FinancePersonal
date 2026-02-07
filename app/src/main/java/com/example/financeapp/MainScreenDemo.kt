@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavHostController
 import com.example.financeapp.data.Transaction
+import com.example.financeapp.home.AddTransactionHomeScreen
 import com.example.financeapp.home.FinanceApp
 import com.example.financeapp.viewModel.FinanceViewModel
 import kotlinx.coroutines.launch
@@ -58,21 +59,23 @@ fun MainScreenDemo(
                     financeViewModel = financeViewModel
                 )
 
-                2 -> AddTransactionScreen(
+                2 -> AddTransactionHomeScreen(
                     onDismiss = { scope.launch { pagerState.animateScrollToPage(0) } },
-                    onSave = { amount, category, date, wallet ->
-                        // Tạo transaction mới
+                    defaultIsIncome = false,
+                    onAddTransaction = { amount, category, isIncome, formattedDate, note -> // ✅ THÊM category
+                        // Tạo transaction mới với thông tin từ category
                         val newTransaction = Transaction(
                             id = transactions.size + 1,
-                            title = category.name,
-                            date = date,
+                            title = category.name,        // ✅ Lấy tên từ category
+                            date = formattedDate,
                             amount = amount,
-                            icon = category.icon,
-                            iconColor = Color(0xFFFF6B6B),
-                            isIncome = false
+                            icon = category.icon,         // ✅ Lấy icon từ category
+                            iconColor = category.color,   // ✅ Lấy màu từ category
+                            isIncome = isIncome,
+                            note = note
                         )
 
-                        // ViewModel tự động xử lý việc thêm transaction và cập nhật balance
+                        // Lưu vào ViewModel
                         financeViewModel.addTransaction(newTransaction)
 
                         // Quay về trang Home

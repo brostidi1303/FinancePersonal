@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.financeapp.home.AddTransactionHomeScreen
 import com.example.financeapp.home.DarkBackground
 import com.example.financeapp.home.FinanceApp
 import com.example.financeapp.viewModel.FinanceViewModel
@@ -66,9 +67,10 @@ fun MainApp(
             }
 
             composable(Screen.AddTransaction.route) {
-                AddTransactionScreen(
+                AddTransactionHomeScreen(
                     onDismiss = { navController.popBackStack() },
-                    onSave = { _, _, _, _ -> navController.popBackStack() }
+                    defaultIsIncome = false,
+                    onAddTransaction = { _, _, _, _, _ -> navController.popBackStack() }
                 )
             }
 

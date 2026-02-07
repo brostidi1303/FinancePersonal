@@ -131,6 +131,7 @@ fun FinanceApp(
         if (showAddTransaction) {
             AddTransactionHomeScreen(
                 onDismiss = { showAddTransaction = false },
+                defaultIsIncome = true,
                 onAddTransaction = { amount, category, isIncome, formattedDate, note -> // ✅ THÊM category
                     // Tạo transaction mới với thông tin từ category
                     val newTransaction = Transaction(
