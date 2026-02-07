@@ -1,11 +1,6 @@
-package com.example.financeapp.home
+package com.example.financeapp.ui.home
 
-import android.content.Context
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,27 +13,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
-import com.example.financeapp.PreferencesManager
 import com.example.financeapp.R
 import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
-import com.example.financeapp.formatCurrency
+import com.example.financeapp.ui.history.formatCurrency
 import com.example.financeapp.viewModel.FinanceViewModel
 
 // Color scheme
@@ -132,22 +121,20 @@ fun FinanceApp(
             AddTransactionHomeScreen(
                 onDismiss = { showAddTransaction = false },
                 defaultIsIncome = true,
-                onAddTransaction = { amount, category, isIncome, formattedDate, note -> // ✅ THÊM category
-                    // Tạo transaction mới với thông tin từ category
+                onAddTransaction = { amount, category, isIncome, date, time, note ->  // ✅ Tách date và time
                     val newTransaction = Transaction(
                         id = transactions.size + 1,
-                        title = category.name,        // ✅ Lấy tên từ category
-                        date = formattedDate,
+                        title = category.name,
+                        date = date,           // ✅ Chỉ date: "Hôm nay" hoặc "dd/MM/yyyy"
+                        time = time,           // ✅ Chỉ time: "HH:mm"
                         amount = amount,
-                        icon = category.icon,         // ✅ Lấy icon từ category
-                        iconColor = category.color,   // ✅ Lấy màu từ category
+                        icon = category.icon,
+                        iconColor = category.color,
                         isIncome = isIncome,
                         note = note
                     )
 
-                    // Lưu vào ViewModel
                     financeViewModel.addTransaction(newTransaction)
-
                     showAddTransaction = false
                 }
             )
@@ -364,7 +351,7 @@ fun TransactionItem(transaction: Transaction) {
                 Box(
                     modifier = Modifier
                         .size(50.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(transaction.iconColor.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -380,7 +367,7 @@ fun TransactionItem(transaction: Transaction) {
 
                 Column(
                     modifier = Modifier,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.SpaceEvenly
                 ){
                     Text(
                         text = transaction.title,
@@ -391,11 +378,45 @@ fun TransactionItem(transaction: Transaction) {
 
                     Spacer(modifier = Modifier.height(5.dp))
 
-                    Text(
-                        text = transaction.date,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.5f)
-                    )
+                    // ✅ HIỂN THỊ DATE VÀ TIME
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Note (nếu có)
+                        if (transaction.note.isNotEmpty()) {
+                            Text(
+                                text = transaction.note,
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "•",
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.5f)
+                            )
+                        }
+
+                        // Date
+                        Text(
+                            text = transaction.date,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+
+                        Text(
+                            text = "•",
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+
+                        // Time
+                        Text(
+                            text = transaction.time,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
 

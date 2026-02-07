@@ -1,4 +1,4 @@
-package com.example.financeapp
+package com.example.financeapp.ui.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -7,15 +7,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavHostController
 import com.example.financeapp.data.Transaction
-import com.example.financeapp.home.AddTransactionHomeScreen
-import com.example.financeapp.home.FinanceApp
+import com.example.financeapp.ui.history.TransactionHistoryScreen
+import com.example.financeapp.ui.home.AddTransactionHomeScreen
+import com.example.financeapp.ui.home.FinanceApp
+import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.viewModel.FinanceViewModel
 import kotlinx.coroutines.launch
 
@@ -62,15 +60,15 @@ fun MainScreenDemo(
                 2 -> AddTransactionHomeScreen(
                     onDismiss = { scope.launch { pagerState.animateScrollToPage(0) } },
                     defaultIsIncome = false,
-                    onAddTransaction = { amount, category, isIncome, formattedDate, note -> // ✅ THÊM category
-                        // Tạo transaction mới với thông tin từ category
+                    onAddTransaction = { amount, category, isIncome, date, time, note -> // ✅ THÊM category
                         val newTransaction = Transaction(
                             id = transactions.size + 1,
-                            title = category.name,        // ✅ Lấy tên từ category
-                            date = formattedDate,
+                            title = category.name,
+                            date = date,           // ✅ Chỉ date: "Hôm nay" hoặc "dd/MM/yyyy"
+                            time = time,           // ✅ Chỉ time: "HH:mm"
                             amount = amount,
-                            icon = category.icon,         // ✅ Lấy icon từ category
-                            iconColor = category.color,   // ✅ Lấy màu từ category
+                            icon = category.icon,
+                            iconColor = category.color,
                             isIncome = isIncome,
                             note = note
                         )

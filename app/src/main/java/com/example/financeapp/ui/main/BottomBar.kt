@@ -1,4 +1,4 @@
-package com.example.financeapp
+package com.example.financeapp.ui.main
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.financeapp.home.CardBackground
-import com.example.financeapp.home.PrimaryBlue
+import com.example.financeapp.ui.home.CardBackground
+import com.example.financeapp.ui.home.PrimaryBlue
 
 @Composable
 fun navigationBarItemColors() = NavigationBarItemDefaults.colors(

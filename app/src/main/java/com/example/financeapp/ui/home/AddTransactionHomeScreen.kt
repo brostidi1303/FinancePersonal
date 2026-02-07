@@ -1,4 +1,4 @@
-package com.example.financeapp.home
+package com.example.financeapp.ui.home
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -22,21 +22,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,13 +42,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.financeapp.R
 import com.example.financeapp.data.APP_CATEGORIES
 import com.example.financeapp.data.Category
 import java.text.SimpleDateFormat
@@ -66,7 +58,7 @@ import java.util.Locale
 fun AddTransactionHomeScreen(
     onDismiss: () -> Unit,
     defaultIsIncome: Boolean = true,
-    onAddTransaction: (Double, Category, Boolean, String, String) -> Unit  // ✅ THÊM THAM SỐ note
+    onAddTransaction: (Double, Category, Boolean, String, String, String) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -74,18 +66,37 @@ fun AddTransactionHomeScreen(
     var isNoteEditing by remember { mutableStateOf(false) }
     var isIncome by remember { mutableStateOf(defaultIsIncome) }
 
-    // Khởi tạo với thời gian hiện tại
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
-    // Format để hiển thị
-    val dateLabel = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selectedDate.time)
+    // State cho Dialog thông báo lỗi
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    // Format để hiển thị - SỬ DỤNG HÀM MỚI
+    val dateLabel = getDateDisplayText(selectedDate)
     val timeLabel = SimpleDateFormat("HH:mm", Locale.getDefault()).format(selectedDate.time)
 
-    // Date Picker Dialog
+    // --- DIALOG THÔNG BÁO LỖI ---
+    if (showErrorDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showErrorDialog = false }) {
+                    Text("Đồng ý", color = PrimaryBlue)
+                }
+            },
+            title = { Text("Thiếu thông tin") },
+            text = { Text(errorMessage) },
+            containerColor = CardBackground,
+            titleContentColor = Color.White,
+            textContentColor = Color.White.copy(alpha = 0.8f)
+        )
+    }
+
     if (showDatePicker) {
         DatePickerDialog(
             context,
@@ -104,7 +115,6 @@ fun AddTransactionHomeScreen(
         }
     }
 
-    // Time Picker Dialog
     if (showTimePicker) {
         TimePickerDialog(
             context,
@@ -180,8 +190,7 @@ fun AddTransactionHomeScreen(
                             } ?: amount
                         }
                     },
-                    // 1. Quan trọng: TextStyle phải căn giữa
-                    textStyle = androidx.compose.ui.text.TextStyle(
+                    textStyle = TextStyle(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -191,14 +200,13 @@ fun AddTransactionHomeScreen(
                     cursorBrush = SolidColor(PrimaryBlue),
                     singleLine = true,
                     decorationBox = { innerTextField ->
-                        // Row này bao quát toàn bộ chiều rộng
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center // Căn giữa nội dung Row
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Box(
-                                contentAlignment = Alignment.Center // 2. Căn giữa Placeholder và TextField bên trong Box
+                                contentAlignment = Alignment.Center
                             ) {
                                 if (amount.isEmpty()) {
                                     Text(
@@ -209,7 +217,7 @@ fun AddTransactionHomeScreen(
                                         textAlign = TextAlign.Center
                                     )
                                 }
-                                innerTextField() // Nội dung nhập liệu sẽ đè lên trên placeholder
+                                innerTextField()
                             }
 
                             Text(
@@ -224,18 +232,18 @@ fun AddTransactionHomeScreen(
                 )
             }
 
-            // Date Selection
+            // Date Selection - HIỂN THỊ THEO LOGIC MỚI
             SelectionCard(
                 icon = Icons.Default.DateRange,
                 iconColor = Color(0xFFE74C3C),
                 title = "Ngày giao dịch",
-                value = if (isToday(selectedDate)) "Hôm nay" else dateLabel,
+                value = dateLabel,  // ✅ Sử dụng dateLabel đã được format
                 onClick = { showDatePicker = true }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Wallet Selection
+            // Time Selection
             SelectionCard(
                 icon = Icons.Default.DateRange,
                 iconColor = Color(0xFF3498DB),
@@ -297,16 +305,30 @@ fun AddTransactionHomeScreen(
                 onClick = {
                     val amountValue = amount.replace(".", "").toDoubleOrNull() ?: 0.0
 
-                    // Tạo chuỗi ngày tháng
-                    val finalDateLabel = if (isToday(selectedDate)) {
-                        "Hôm nay, $timeLabel"
-                    } else {
-                        "$dateLabel, $timeLabel"
-                    }
+                    // ✅ SỬ DỤNG dateLabel ĐÃ ĐƯỢC FORMAT
+                    val finalDateLabel = dateLabel
+                    val finalTimeLabel = timeLabel
 
-                    // ✅ TRUYỀN THÊM note VÀO CALLBACK
-                    selectedCategory?.let { category ->
-                        onAddTransaction(amountValue, category, isIncome, finalDateLabel, note)
+                    when {
+                        amountValue <= 0 -> {
+                            errorMessage = "Vui lòng nhập số tiền hợp lệ."
+                            showErrorDialog = true
+                        }
+                        selectedCategory == null -> {
+                            errorMessage = "Vui lòng chọn một danh mục."
+                            showErrorDialog = true
+                        }
+                        else -> {
+                            // Nếu mọi thứ ok, mới gọi callback
+                            onAddTransaction(
+                                amountValue,
+                                selectedCategory!!,
+                                isIncome,
+                                finalDateLabel,
+                                finalTimeLabel,
+                                note
+                            )
+                        }
                     }
                 },
                 modifier = Modifier
@@ -327,6 +349,60 @@ fun AddTransactionHomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+}
+
+// ✅ HÀM MỚI: Hiển thị thứ trong tuần hoặc ngày tháng
+fun getDateDisplayText(calendar: Calendar): String {
+    val today = Calendar.getInstance()
+
+    // Kiểm tra xem có phải hôm nay không
+    if (isToday(calendar)) {
+        return "Hôm nay"
+    }
+
+    // Kiểm tra xem có trong tuần hiện tại không
+    if (isInCurrentWeek(calendar, today)) {
+        return getDayOfWeekName(calendar)
+    }
+
+    // Nếu không, hiển thị ngày tháng bình thường
+    return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
+}
+
+// ✅ HÀM KIỂM TRA CÓ TRONG TUẦN HIỆN TẠI KHÔNG
+fun isInCurrentWeek(calendar: Calendar, today: Calendar): Boolean {
+    // Lấy ngày đầu tuần (Thứ Hai)
+    val startOfWeek = today.clone() as Calendar
+    startOfWeek.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    startOfWeek.set(Calendar.HOUR_OF_DAY, 0)
+    startOfWeek.set(Calendar.MINUTE, 0)
+    startOfWeek.set(Calendar.SECOND, 0)
+    startOfWeek.set(Calendar.MILLISECOND, 0)
+
+    // Lấy ngày cuối tuần (Chủ Nhật)
+    val endOfWeek = startOfWeek.clone() as Calendar
+    endOfWeek.add(Calendar.DAY_OF_WEEK, 6)
+    endOfWeek.set(Calendar.HOUR_OF_DAY, 23)
+    endOfWeek.set(Calendar.MINUTE, 59)
+    endOfWeek.set(Calendar.SECOND, 59)
+
+    // Kiểm tra calendar có nằm trong khoảng [startOfWeek, endOfWeek] không
+    return calendar.timeInMillis >= startOfWeek.timeInMillis &&
+            calendar.timeInMillis <= endOfWeek.timeInMillis
+}
+
+// ✅ HÀM LẤY TÊN THỨ TRONG TUẦN
+fun getDayOfWeekName(calendar: Calendar): String {
+    return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> "Thứ Hai"
+        Calendar.TUESDAY -> "Thứ Ba"
+        Calendar.WEDNESDAY -> "Thứ Tư"
+        Calendar.THURSDAY -> "Thứ Năm"
+        Calendar.FRIDAY -> "Thứ Sáu"
+        Calendar.SATURDAY -> "Thứ Bảy"
+        Calendar.SUNDAY -> "Chủ Nhật"
+        else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
     }
 }
 

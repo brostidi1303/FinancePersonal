@@ -1,4 +1,4 @@
-package com.example.financeapp.home
+package com.example.financeapp.ui.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
 import com.example.financeapp.data.Transaction
-import com.example.financeapp.formatCurrency
+import com.example.financeapp.ui.history.formatCurrency
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -136,20 +136,22 @@ fun calculateMonthlySpending(transactions: List<Transaction>): MonthlySpendingDa
     val currentMonth = calendar.get(Calendar.MONTH)
     val currentYear = calendar.get(Calendar.YEAR)
 
-    // Format để parse date từ transaction
-    val dateFormats = listOf(
-        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
-        SimpleDateFormat("'Hôm nay', HH:mm", Locale("vi")),
-        SimpleDateFormat("dd 'Th'MM, HH:mm", Locale("vi"))
-    )
+    // ✅ UPDATED: Parse chỉ date, không cần time
+    fun parseTransactionDate(transaction: Transaction): Calendar? {
+        val dateString = transaction.date
 
-    fun parseTransactionDate(dateString: String): Calendar? {
-        // Nếu là "Hôm nay", dùng ngày hiện tại
-        if (dateString.startsWith("Hôm nay")) {
+        // Case 1: "Hôm nay"
+        if (dateString == "Hôm nay") {
             return Calendar.getInstance()
         }
 
-        for (format in dateFormats) {
+        // Case 2: "dd/MM/yyyy"
+        val formats = listOf(
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
+            SimpleDateFormat("dd 'Th'MM", Locale("vi"))
+        )
+
+        for (format in formats) {
             try {
                 val date = format.parse(dateString)
                 if (date != null) {
@@ -166,7 +168,7 @@ fun calculateMonthlySpending(transactions: List<Transaction>): MonthlySpendingDa
     val currentMonthTransactions = transactions.filter { transaction ->
         if (transaction.isIncome) return@filter false
 
-        val transactionCal = parseTransactionDate(transaction.date)
+        val transactionCal = parseTransactionDate(transaction)
         transactionCal != null &&
                 transactionCal.get(Calendar.MONTH) == currentMonth &&
                 transactionCal.get(Calendar.YEAR) == currentYear
@@ -182,7 +184,7 @@ fun calculateMonthlySpending(transactions: List<Transaction>): MonthlySpendingDa
     val lastMonthTransactions = transactions.filter { transaction ->
         if (transaction.isIncome) return@filter false
 
-        val transactionCal = parseTransactionDate(transaction.date)
+        val transactionCal = parseTransactionDate(transaction)
         transactionCal != null &&
                 transactionCal.get(Calendar.MONTH) == lastMonth &&
                 transactionCal.get(Calendar.YEAR) == lastMonthYear
@@ -202,13 +204,6 @@ fun calculateMonthlySpending(transactions: List<Transaction>): MonthlySpendingDa
     // Chia theo 4 tuần
     val weeklySpending = mutableListOf<WeekSpending>()
 
-    // Lấy ngày đầu và cuối tháng
-    val firstDayOfMonth = Calendar.getInstance().apply {
-        set(Calendar.YEAR, currentYear)
-        set(Calendar.MONTH, currentMonth)
-        set(Calendar.DAY_OF_MONTH, 1)
-    }
-
     val lastDayOfMonth = Calendar.getInstance().apply {
         set(Calendar.YEAR, currentYear)
         set(Calendar.MONTH, currentMonth)
@@ -224,7 +219,7 @@ fun calculateMonthlySpending(transactions: List<Transaction>): MonthlySpendingDa
 
         // Filter transactions trong tuần này
         val weekTransactions = currentMonthTransactions.filter { transaction ->
-            val transactionCal = parseTransactionDate(transaction.date)
+            val transactionCal = parseTransactionDate(transaction)
             if (transactionCal == null) return@filter false
 
             val dayOfMonth = transactionCal.get(Calendar.DAY_OF_MONTH)

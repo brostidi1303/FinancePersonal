@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.financeapp.PreferencesManager
+import com.example.financeapp.utils.PreferencesManager
 import com.example.financeapp.data.Transaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -266,22 +266,20 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
 
     /**
      * Parse date string từ transaction
-     * Hỗ trợ nhiều format:
-     * - "Hôm nay, HH:mm"
-     * - "dd/MM/yyyy, HH:mm"
-     * - "dd ThMM, HH:mm"
+     * Hỗ trợ format:
+     * - "Hôm nay"
+     * - "dd/MM/yyyy"
      */
     private fun parseTransactionDate(dateString: String): Calendar? {
-        // Case 1: "Hôm nay, HH:mm"
-        if (dateString.startsWith("Hôm nay")) {
+        // Case 1: "Hôm nay"
+        if (dateString == "Hôm nay") {
             return Calendar.getInstance()
         }
 
-        // Case 2: "dd/MM/yyyy, HH:mm" hoặc "dd/MM/yyyy"
+        // Case 2: "dd/MM/yyyy"
         val formats = listOf(
-            "dd/MM/yyyy, HH:mm",
             "dd/MM/yyyy",
-            "dd 'Th'MM, HH:mm"
+            "dd 'Th'MM"  // Backup format nếu cần
         )
 
         for (pattern in formats) {
@@ -300,37 +298,47 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Lấy transactions trong khoảng thời gian
+     * Parse time string từ transaction
+     * Format: "HH:mm"
      */
-    fun getTransactionsBetween(startDate: Calendar, endDate: Calendar): List<Transaction> {
-        return _transactions.filter { transaction ->
-            val transactionDate = parseTransactionDate(transaction.date)
-            transactionDate?.let {
-                it.timeInMillis >= startDate.timeInMillis &&
-                        it.timeInMillis <= endDate.timeInMillis
-            } ?: false
+    private fun parseTransactionTime(timeString: String): Pair<Int, Int>? {
+        return try {
+            val parts = timeString.split(":")
+            if (parts.size == 2) {
+                val hour = parts[0].toInt()
+                val minute = parts[1].toInt()
+                Pair(hour, minute)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 
     /**
-     * Lấy chi tiêu theo category trong tháng hiện tại
+     * Tạo Calendar từ transaction date và time
      */
-    fun getMonthlyExpenseByCategory(): Map<String, Double> {
-        val calendar = Calendar.getInstance()
-        val currentMonth = calendar.get(Calendar.MONTH)
-        val currentYear = calendar.get(Calendar.YEAR)
+    private fun getTransactionCalendar(transaction: Transaction): Calendar? {
+        val dateCal = parseTransactionDate(transaction.date) ?: return null
+        val time = parseTransactionTime(transaction.time) ?: return null
 
-        return _transactions
-            .filter { !it.isIncome }
-            .filter { transaction ->
-                val transactionDate = parseTransactionDate(transaction.date)
-                transactionDate?.let {
-                    it.get(Calendar.MONTH) == currentMonth &&
-                            it.get(Calendar.YEAR) == currentYear
-                } ?: false
-            }
-            .groupBy { it.title }  // Group by category name
-            .mapValues { entry -> entry.value.sumOf { it.amount } }
+        return dateCal.apply {
+            set(Calendar.HOUR_OF_DAY, time.first)
+            set(Calendar.MINUTE, time.second)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+    }
+
+    /**
+     * Sắp xếp transactions theo thời gian (date + time)
+     */
+
+    fun getSortedTransactions(): List<Transaction> {
+        return _transactions.sortedByDescending { transaction ->
+            getTransactionCalendar(transaction)?.timeInMillis ?: 0L
+        }
     }
 
 }

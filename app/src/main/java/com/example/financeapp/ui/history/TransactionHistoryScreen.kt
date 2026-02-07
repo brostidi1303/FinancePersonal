@@ -1,4 +1,4 @@
-package com.example.financeapp
+package com.example.financeapp.ui.history
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,13 +20,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.data.Transaction
-import com.example.financeapp.home.CardBackground
-import com.example.financeapp.home.DarkBackground
-import com.example.financeapp.home.GreenPositive
-import com.example.financeapp.home.PrimaryBlue
+import com.example.financeapp.ui.home.CardBackground
+import com.example.financeapp.ui.home.DarkBackground
+import com.example.financeapp.ui.home.GreenPositive
+import com.example.financeapp.ui.home.PrimaryBlue
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.NumberFormat
 import java.util.*
+import kotlin.math.abs
 
 enum class FilterType {
     TIME, CATEGORY, ACCOUNT
@@ -44,9 +44,8 @@ fun TransactionHistoryScreen(
     val transactions = financeViewModel.transactions
     // Nhóm transactions theo ngày
     val groupedTransactions = remember(transactions.toList()) {
-        transactions.groupBy { it.date }
+        transactions.groupBy { it.date }  // ✅ Nhóm theo "Hôm nay" hoặc "dd/MM/yyyy"
     }
-
     // Tính tổng chi tiêu và thu nhập
     val totalExpense = transactions.filter { !it.isIncome }.sumOf { it.amount }
     val totalIncome = transactions.filter { it.isIncome }.sumOf { it.amount }
@@ -114,11 +113,17 @@ fun TransactionHistoryScreen(
                     .fillMaxWidth()
                     .weight(1f),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 groupedTransactions.forEach { (date, transactionsForDate) ->
                     item {
-                        DateGroupHeader(dateGroup = date)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+
+                        ) {
+                            DateGroupHeader(dateGroup = date, time = transactionsForDate.firstOrNull()?.time ?: "")
+                        }
                     }
 
                     items(transactionsForDate) { transaction ->
@@ -283,7 +288,7 @@ fun SummaryCards(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "- ${formatCurrency(kotlin.math.abs(totalExpense))} đ",
+                    text = "- ${formatCurrency(abs(totalExpense))} đ",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Red
@@ -320,7 +325,7 @@ fun SummaryCards(
 }
 
 @Composable
-fun DateGroupHeader(dateGroup: String) {
+fun DateGroupHeader(dateGroup: String, time: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -331,6 +336,12 @@ fun DateGroupHeader(dateGroup: String) {
         Text(
             text = dateGroup,
             fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            text = time,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
@@ -380,19 +391,42 @@ fun HistoryTransactionItem(transaction: Transaction) {
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = transaction.date,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.5f),
-                        maxLines = 1
-                    )
+
+                    // ✅ HIỂN THỊ TIME VÀ NOTE
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Time
+                        Text(
+                            text = transaction.time,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.5f),
+                            maxLines = 1
+                        )
+
+                        // Note (nếu có)
+                        if (transaction.note.isNotEmpty()) {
+                            Text(
+                                text = "•",
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = transaction.note,
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.5f),
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = "${if (transaction.isIncome) "+" else "-"} ${formatCurrency(kotlin.math.abs(transaction.amount))} đ",
+                text = "${if (transaction.isIncome) "+" else "-"} ${formatCurrency(abs(transaction.amount))} đ",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (transaction.isIncome) GreenPositive else Color(0xFFFF6B6B)

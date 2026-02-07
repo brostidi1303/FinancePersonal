@@ -1,9 +1,8 @@
-package com.example.financeapp
+package com.example.financeapp.nav
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -13,9 +12,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.financeapp.home.AddTransactionHomeScreen
-import com.example.financeapp.home.DarkBackground
-import com.example.financeapp.home.FinanceApp
+import com.example.financeapp.ui.main.BottomNavigationBar
+import com.example.financeapp.ui.history.TransactionHistoryScreen
+import com.example.financeapp.ui.home.AddTransactionHomeScreen
+import com.example.financeapp.ui.home.DarkBackground
+import com.example.financeapp.ui.home.FinanceApp
+import com.example.financeapp.ui.main.MainScreenDemo
+import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.viewModel.FinanceViewModel
 
 @Composable
@@ -70,7 +73,7 @@ fun MainApp(
                 AddTransactionHomeScreen(
                     onDismiss = { navController.popBackStack() },
                     defaultIsIncome = false,
-                    onAddTransaction = { _, _, _, _, _ -> navController.popBackStack() }
+                    onAddTransaction = { _, _, _, _, _, _ -> navController.popBackStack() }
                 )
             }
 

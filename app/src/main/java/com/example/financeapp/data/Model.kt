@@ -7,7 +7,8 @@ import com.example.financeapp.R
 data class Transaction(
     val id: Int,
     val title: String,
-    val date: String,
+    val date: String,        // Format: "dd/MM/yyyy" hoặc "Hôm nay"
+    val time: String,        // Format: "HH:mm"
     val amount: Double,
     val icon: Int,
     val iconColor: Color,

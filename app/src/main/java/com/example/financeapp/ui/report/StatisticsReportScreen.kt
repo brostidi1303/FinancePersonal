@@ -1,4 +1,4 @@
-package com.example.financeapp
+package com.example.financeapp.ui.report
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -26,9 +26,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.financeapp.home.CardBackground
-import com.example.financeapp.home.DarkBackground
-import com.example.financeapp.home.PrimaryBlue
+import com.example.financeapp.ui.history.formatCurrency
+import com.example.financeapp.ui.home.CardBackground
+import com.example.financeapp.ui.home.DarkBackground
+import com.example.financeapp.ui.home.PrimaryBlue
 
 data class CategoryExpense(
     val id: Int,
