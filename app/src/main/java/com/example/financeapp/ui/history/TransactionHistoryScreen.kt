@@ -42,13 +42,28 @@ fun TransactionHistoryScreen(
     var selectedTimeFilter by remember { mutableStateOf("Tháng này") }
     var selectedCategoryFilter by remember { mutableStateOf("Danh mục") }
     val transactions = financeViewModel.transactions
-    // Nhóm transactions theo ngày
-    val groupedTransactions = remember(transactions.toList()) {
-        transactions.groupBy { it.date }  // ✅ Nhóm theo "Hôm nay" hoặc "dd/MM/yyyy"
+
+    // ✅ Lọc transactions theo searchQuery
+    val filteredTransactions = remember(transactions.toList(), searchQuery) {
+        if (searchQuery.isEmpty()) {
+            transactions.toList()
+        } else {
+            transactions.filter { transaction ->
+                transaction.title.contains(searchQuery, ignoreCase = true) ||
+                        transaction.note.contains(searchQuery, ignoreCase = true) ||
+                        transaction.amount.toString().contains(searchQuery)
+            }
+        }
     }
-    // Tính tổng chi tiêu và thu nhập
-    val totalExpense = transactions.filter { !it.isIncome }.sumOf { it.amount }
-    val totalIncome = transactions.filter { it.isIncome }.sumOf { it.amount }
+
+    // Nhóm transactions theo ngày
+    val groupedTransactions = remember(filteredTransactions) {
+        filteredTransactions.groupBy { it.date }  // ✅ Nhóm theo "Hôm nay" hoặc "dd/MM/yyyy"
+    }
+
+    // Tính tổng chi tiêu và thu nhập (dựa trên filteredTransactions)
+    val totalExpense = filteredTransactions.filter { !it.isIncome }.sumOf { it.amount }
+    val totalIncome = filteredTransactions.filter { it.isIncome }.sumOf { it.amount }
 
     Column(
         modifier = Modifier
@@ -80,8 +95,8 @@ fun TransactionHistoryScreen(
         )
 
         // Transaction list grouped by date
-        if (transactions.isEmpty()) {
-            // Hiển thị khi không có giao dịch
+        if (filteredTransactions.isEmpty()) {
+            // Hiển thị khi không có giao dịch (hoặc không tìm thấy kết quả)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,7 +115,7 @@ fun TransactionHistoryScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Chưa có giao dịch",
+                        text = if (searchQuery.isEmpty()) "Chưa có giao dịch" else "Không tìm thấy kết quả",
                         color = Color.Gray,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
@@ -121,7 +136,7 @@ fun TransactionHistoryScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
 
-                        ) {
+                            ) {
                             DateGroupHeader(dateGroup = date, time = transactionsForDate.firstOrNull()?.time ?: "")
                         }
                     }
@@ -168,34 +183,51 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit
 ) {
-    Box(
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+            .clip(RoundedCornerShape(16.dp)),
+        placeholder = {
+            Text(
+                text = "Tìm kiếm giao dịch",
+                fontSize = 15.sp,
+                color = Color.White.copy(alpha = 0.5f)
+            )
+        },
+        leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
                 tint = Color.White.copy(alpha = 0.5f),
                 modifier = Modifier.size(20.dp)
             )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = if (query.isEmpty()) "Tìm kiếm giao dịch" else query,
-                fontSize = 15.sp,
-                color = if (query.isEmpty()) Color.White.copy(alpha = 0.5f) else Color.White
-            )
-        }
-    }
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        },
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = CardBackground,
+            unfocusedContainerColor = CardBackground,
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            cursorColor = PrimaryBlue,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        ),
+        singleLine = true
+    )
 }
 
 @Composable

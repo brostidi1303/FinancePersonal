@@ -19,6 +19,7 @@ import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.main.MainScreenDemo
 import com.example.financeapp.ui.report.StatisticsReportScreen
+import com.example.financeapp.ui.setting.SettingsScreen
 import com.example.financeapp.viewModel.FinanceViewModel
 
 @Composable
@@ -82,7 +83,9 @@ fun MainApp(
             }
 
             composable(Screen.Profile.route) {
-                /* ProfileScreen() */
+                SettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
