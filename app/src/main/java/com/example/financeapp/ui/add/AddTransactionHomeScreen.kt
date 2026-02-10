@@ -1,4 +1,4 @@
-package com.example.financeapp.ui.home
+package com.example.financeapp.ui.add
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -26,12 +26,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.data.APP_CATEGORIES
 import com.example.financeapp.data.Category
+import com.example.financeapp.ui.home.CardBackground
+import com.example.financeapp.ui.home.CategoryItem1
+import com.example.financeapp.ui.home.DarkBackground
+import com.example.financeapp.ui.home.PrimaryBlue
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -60,7 +67,8 @@ import java.util.Locale
 fun AddTransactionHomeScreen(
     onDismiss: () -> Unit,
     defaultIsIncome: Boolean = true,
-    onAddTransaction: (Double, Category, Boolean, String, String, String) -> Unit
+    onAddTransaction: (Double, Category, Boolean, String, String, String) -> Unit,
+    onEditCategories: () -> Unit = {}  // ✅ Thêm callback
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -88,7 +96,7 @@ fun AddTransactionHomeScreen(
 
     // --- DIALOG THÔNG BÁO LỖI ---
     if (showErrorDialog) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { showErrorDialog = false },
             confirmButton = {
                 TextButton(onClick = { showErrorDialog = false }) {
@@ -270,7 +278,7 @@ fun AddTransactionHomeScreen(
                     .clickable { isNoteEditing = true }
                     .padding(8.dp)
             ) {
-                androidx.compose.material3.TextField(
+                TextField(
                     value = note,
                     onValueChange = { note = it },
                     placeholder = {
@@ -288,7 +296,7 @@ fun AddTransactionHomeScreen(
                             modifier = Modifier.size(20.dp)
                         )
                     },
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                    colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedTextColor = Color.White,
@@ -323,7 +331,7 @@ fun AddTransactionHomeScreen(
                         color = Color.White,
                         fontWeight = FontWeight.Medium
                     )
-                    TextButton(onClick = { /* TODO */ }) {
+                    TextButton(onClick = onEditCategories) {
                         Text(
                             text = "Chỉnh sửa",
                             color = PrimaryBlue,

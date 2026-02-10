@@ -11,7 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.history.TransactionHistoryScreen
-import com.example.financeapp.ui.home.AddTransactionHomeScreen
+import com.example.financeapp.ui.add.AddTransactionHomeScreen
 import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.ui.setting.SettingsScreen
@@ -24,6 +24,7 @@ fun MainScreenDemo(
     financeViewModel: FinanceViewModel, // Nhận ViewModel thay vì từng state riêng lẻ
     onPageChanged: (Int) -> Unit,
     targetPage: Int,
+    onNavigateToCategoryManagement: () -> Unit = {}
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
     val scope = rememberCoroutineScope()
@@ -79,7 +80,8 @@ fun MainScreenDemo(
 
                         // Quay về trang Home
                         scope.launch { pagerState.animateScrollToPage(0) }
-                    }
+                    },
+                    onEditCategories = onNavigateToCategoryManagement
                 )
 
                 3 -> StatisticsReportScreen(

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
 import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
+import com.example.financeapp.ui.add.AddTransactionHomeScreen
 import com.example.financeapp.ui.history.formatCurrency
 import com.example.financeapp.viewModel.FinanceViewModel
 
@@ -136,7 +137,7 @@ fun FinanceApp(
 
                     financeViewModel.addTransaction(newTransaction)
                     showAddTransaction = false
-                }
+                },
             )
         }
     }
