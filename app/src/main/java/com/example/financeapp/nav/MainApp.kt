@@ -6,6 +6,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -15,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.financeapp.data.Category
 import com.example.financeapp.ui.main.BottomNavigationBar
 import com.example.financeapp.ui.history.TransactionHistoryScreen
 import com.example.financeapp.ui.add.AddTransactionHomeScreen
@@ -35,7 +37,7 @@ fun MainApp(
     val financeViewModel: FinanceViewModel = viewModel()
     var currentPage by remember { mutableIntStateOf(0) }
     var targetPage by remember { mutableIntStateOf(0) }
-
+    var categoryEditing by remember { mutableStateOf<Category?>(null) }
     // ✅ Lấy route hiện tại để ẩn/hiện BottomBar
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
@@ -110,24 +112,29 @@ fun MainApp(
                 )
             }
 
-            // ✅ CategoryManagement nằm ngoài MainScreenDemo
-            composable(Screen.CategoryManagement.route) {
+            composable("category_management") {
                 CategoryManagementScreen(
                     onBack = { navController.popBackStack() },
-                    onNavigateToCreateCategory = {
-                        navController.navigate(Screen.CreateCategory.route)
-                    }
+                    onNavigateToCreateOrEdit = { category ->
+                        categoryEditing = category // Lưu category cần sửa vào biến tạm
+                        navController.navigate("create_category")
+                    },
+                    financeViewModel = financeViewModel
                 )
             }
 
-            // ✅ Thêm route CreateCategory
-            composable(Screen.CreateCategory.route) {
+            composable("create_category") {
                 CreateCategoryScreen(
                     onBack = { navController.popBackStack() },
-                    onSave = { name, color, iconId ->
-                        // TODO: Lưu category mới vào ViewModel
-                        // val newCategory = Category(name = name, color = color, icon = iconId)
-                        // financeViewModel.addCategory(newCategory)
+                    categoryToEdit = categoryEditing, // Truyền category vào
+                    onSave = { updatedCategory ->
+                        if (categoryEditing == null) {
+                            // Logic tạo mới
+                            financeViewModel.addCategory(updatedCategory.copy(id = (financeViewModel.categories.maxOfOrNull { it.id } ?: 0) + 1))
+                        } else {
+                            // Logic cập nhật
+                            financeViewModel.updateCategory(categoryEditing!!, updatedCategory)
+                        }
                         navController.popBackStack()
                     }
                 )

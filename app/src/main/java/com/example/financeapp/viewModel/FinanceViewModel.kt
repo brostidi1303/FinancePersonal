@@ -4,8 +4,11 @@ import android.app.Application
 import android.icu.text.SimpleDateFormat
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.financeapp.data.APP_CATEGORIES
+import com.example.financeapp.data.Category
 import com.example.financeapp.utils.PreferencesManager
 import com.example.financeapp.data.Transaction
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,12 +29,15 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     private val _initialBalance = MutableStateFlow(0.0)
     val initialBalance: StateFlow<Double> = _initialBalance.asStateFlow()
 
-    // State cho transactions - dùng SnapshotStateList để tương thích với Compose
+    // State cho transactions
     private val _transactions = mutableStateListOf<Transaction>()
     val transactions: SnapshotStateList<Transaction> = _transactions
 
+    // ✅ State cho categories
+    private val _categories = mutableStateListOf<Category>()
+    val categories: SnapshotStateList<Category> = _categories
+
     init {
-        // Load data từ SharedPreferences khi ViewModel được tạo
         loadData()
     }
 
@@ -46,33 +52,78 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             val savedTransactions = prefsManager.getTransactions()
             _transactions.clear()
             _transactions.addAll(savedTransactions)
+
+            // ✅ Load categories
+            val savedCategories = prefsManager.getCategories()
+            _categories.clear()
+            if (savedCategories.isEmpty()) {
+                // Nếu chưa có, dùng mặc định
+                _categories.addAll(APP_CATEGORIES)
+            } else {
+                _categories.addAll(savedCategories)
+            }
+        }
+    }
+
+    // ==================== CATEGORY MANAGEMENT ====================
+
+    /**
+     * Thêm category mới
+     */
+    fun addCategory(category: Category) {
+        _categories.add(category)
+        saveCategories()
+    }
+
+    /**
+     * Cập nhật category
+     */
+    fun updateCategory(oldCategory: Category, newCategory: Category) {
+        val index = _categories.indexOf(oldCategory)
+        if (index != -1) {
+            _categories[index] = newCategory
+            saveCategories()
         }
     }
 
     /**
-     * Cập nhật total balance
+     * Xóa category
      */
+    fun removeCategory(category: Category) {
+        _categories.remove(category)
+        saveCategories()
+    }
+
+    /**
+     * Lưu categories vào SharedPreferences
+     */
+    private fun saveCategories() {
+        prefsManager.saveCategories(_categories.toList())
+    }
+
+    /**
+     * Tìm category theo tên
+     */
+    fun findCategoryByName(name: String): Category? {
+        return _categories.find { it.name.equals(name, ignoreCase = true) }
+    }
+
+    // ==================== TRANSACTION MANAGEMENT ====================
+
     fun updateTotalBalance(newBalance: Double) {
         _totalBalance.value = newBalance
         prefsManager.saveTotalBalance(newBalance)
     }
 
-    /**
-     * Cập nhật initial balance
-     */
     fun updateInitialBalance(newBalance: Double) {
         _initialBalance.value = newBalance
         prefsManager.saveInitialBalance(newBalance)
     }
 
-    /**
-     * Thêm transaction mới
-     */
     fun addTransaction(transaction: Transaction) {
-        _transactions.add(0, transaction) // Thêm vào đầu danh sách
+        _transactions.add(0, transaction)
         saveTransactions()
 
-        // Tự động cập nhật balance
         val newBalance = if (transaction.isIncome) {
             _totalBalance.value + transaction.amount
         } else {
@@ -80,20 +131,15 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         }
         updateTotalBalance(newBalance)
 
-        // Nếu là thu nhập đầu tiên và chưa có initial balance
         if (transaction.isIncome && _initialBalance.value == 0.0) {
             updateInitialBalance(transaction.amount)
         }
     }
 
-    /**
-     * Xóa transaction
-     */
     fun removeTransaction(transaction: Transaction) {
         _transactions.remove(transaction)
         saveTransactions()
 
-        // Cập nhật lại balance
         val newBalance = if (transaction.isIncome) {
             _totalBalance.value - transaction.amount
         } else {
@@ -102,30 +148,19 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         updateTotalBalance(newBalance)
     }
 
-    /**
-     * Cập nhật transaction
-     */
     fun updateTransaction(oldTransaction: Transaction, newTransaction: Transaction) {
         val index = _transactions.indexOf(oldTransaction)
         if (index != -1) {
             _transactions[index] = newTransaction
             saveTransactions()
-
-            // Tính toán lại balance
             recalculateBalance()
         }
     }
 
-    /**
-     * Lưu transactions vào SharedPreferences
-     */
     private fun saveTransactions() {
         prefsManager.saveTransactions(_transactions.toList())
     }
 
-    /**
-     * Tính toán lại toàn bộ balance từ transactions
-     */
     private fun recalculateBalance() {
         val income = _transactions.filter { it.isIncome }.sumOf { it.amount }
         val expense = _transactions.filter { !it.isIncome }.sumOf { it.amount }
@@ -138,56 +173,40 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * Clear tất cả data
-     */
     fun clearAllData() {
         _transactions.clear()
         _totalBalance.value = 0.0
         _initialBalance.value = 0.0
+        _categories.clear()
+        _categories.addAll(APP_CATEGORIES)
         prefsManager.clearAll()
     }
 
-    /**
-     * Tính tổng thu nhập
-     */
     fun getTotalIncome(): Double {
         return _transactions.filter { it.isIncome }.sumOf { it.amount }
     }
 
-    /**
-     * Tính tổng chi tiêu
-     */
     fun getTotalExpense(): Double {
         return _transactions.filter { !it.isIncome }.sumOf { it.amount }
     }
 
-    /**
-     * Lấy transactions theo ngày
-     */
     fun getTransactionsByDate(date: String): List<Transaction> {
         return _transactions.filter { it.date == date }
     }
 
-    /**
-     * Tìm kiếm transactions
-     */
     fun searchTransactions(query: String): List<Transaction> {
         return _transactions.filter {
             it.title.contains(query, ignoreCase = true)
         }
     }
 
-    /**
-     * Tính tổng chi tiêu trong tháng hiện tại
-     */
     fun getMonthlyExpense(): Double {
         val calendar = Calendar.getInstance()
         val currentMonth = calendar.get(Calendar.MONTH)
         val currentYear = calendar.get(Calendar.YEAR)
 
         return _transactions
-            .filter { !it.isIncome }  // Chỉ lấy expense
+            .filter { !it.isIncome }
             .filter { transaction ->
                 val transactionDate = parseTransactionDate(transaction.date)
                 transactionDate?.let {
@@ -198,9 +217,6 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             .sumOf { it.amount }
     }
 
-    /**
-     * Tính tổng chi tiêu tháng trước
-     */
     fun getLastMonthExpense(): Double {
         val calendar = Calendar.getInstance()
         val lastMonth = if (calendar.get(Calendar.MONTH) == 0) 11 else calendar.get(Calendar.MONTH) - 1
@@ -222,16 +238,11 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             .sumOf { it.amount }
     }
 
-    /**
-     * Lấy chi tiêu theo tuần trong tháng hiện tại
-     * @return Map<Int, Double> - Key: số tuần (1-4), Value: tổng chi tiêu
-     */
     fun getWeeklyExpense(): Map<Int, Double> {
         val calendar = Calendar.getInstance()
         val currentMonth = calendar.get(Calendar.MONTH)
         val currentYear = calendar.get(Calendar.YEAR)
 
-        // Lấy số ngày trong tháng
         val lastDay = Calendar.getInstance().apply {
             set(Calendar.YEAR, currentYear)
             set(Calendar.MONTH, currentMonth)
@@ -264,23 +275,12 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         return weeklyExpense
     }
 
-    /**
-     * Parse date string từ transaction
-     * Hỗ trợ format:
-     * - "Hôm nay"
-     * - "dd/MM/yyyy"
-     */
     private fun parseTransactionDate(dateString: String): Calendar? {
-        // Case 1: "Hôm nay"
         if (dateString == "Hôm nay") {
             return Calendar.getInstance()
         }
 
-        // Case 2: "dd/MM/yyyy"
-        val formats = listOf(
-            "dd/MM/yyyy",
-            "dd 'Th'MM"  // Backup format nếu cần
-        )
+        val formats = listOf("dd/MM/yyyy", "dd 'Th'MM")
 
         for (pattern in formats) {
             try {
@@ -297,10 +297,6 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         return null
     }
 
-    /**
-     * Parse time string từ transaction
-     * Format: "HH:mm"
-     */
     private fun parseTransactionTime(timeString: String): Pair<Int, Int>? {
         return try {
             val parts = timeString.split(":")
@@ -316,9 +312,6 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * Tạo Calendar từ transaction date và time
-     */
     private fun getTransactionCalendar(transaction: Transaction): Calendar? {
         val dateCal = parseTransactionDate(transaction.date) ?: return null
         val time = parseTransactionTime(transaction.time) ?: return null
@@ -331,14 +324,9 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * Sắp xếp transactions theo thời gian (date + time)
-     */
-
     fun getSortedTransactions(): List<Transaction> {
         return _transactions.sortedByDescending { transaction ->
             getTransactionCalendar(transaction)?.timeInMillis ?: 0L
         }
     }
-
 }

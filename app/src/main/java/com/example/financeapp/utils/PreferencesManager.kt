@@ -3,6 +3,7 @@ package com.example.financeapp.utils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
+import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -24,6 +25,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TOTAL_BALANCE = "total_balance"
         private const val KEY_INITIAL_BALANCE = "initial_balance"
         private const val KEY_TRANSACTIONS = "transactions"
+        private const val KEY_CATEGORIES = "categories" // ✅ Thêm key cho categories
     }
 
     // Lưu và lấy Total Balance
@@ -44,17 +46,34 @@ class PreferencesManager(context: Context) {
         return prefs.getFloat(KEY_INITIAL_BALANCE, 0f).toDouble()
     }
 
-    // Lưu danh sách transactions - TRỰC TIẾP với Transaction class
+    // Lưu danh sách transactions
     fun saveTransactions(transactions: List<Transaction>) {
         val json = gson.toJson(transactions)
         prefs.edit().putString(KEY_TRANSACTIONS, json).apply()
     }
 
-    // Lấy danh sách transactions - TRỰC TIẾP với Transaction class
+    // Lấy danh sách transactions
     fun getTransactions(): List<Transaction> {
         val json = prefs.getString(KEY_TRANSACTIONS, null) ?: return emptyList()
         val type = object : TypeToken<List<Transaction>>() {}.type
         return gson.fromJson(json, type)
+    }
+
+    // ✅ Lưu danh sách categories
+    fun saveCategories(categories: List<Category>) {
+        val json = gson.toJson(categories)
+        prefs.edit().putString(KEY_CATEGORIES, json).apply()
+    }
+
+    // ✅ Lấy danh sách categories
+    fun getCategories(): List<Category> {
+        val json = prefs.getString(KEY_CATEGORIES, null) ?: return emptyList()
+        val type = object : TypeToken<List<Category>>() {}.type
+        return try {
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Clear all data

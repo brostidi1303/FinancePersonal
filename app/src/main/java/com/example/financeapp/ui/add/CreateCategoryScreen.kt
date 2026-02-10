@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
+import com.example.financeapp.data.Category
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
@@ -53,11 +54,12 @@ data class CategoryIcon(
 @Composable
 fun CreateCategoryScreen(
     onBack: () -> Unit,
-    onSave: (String, Color, Int) -> Unit
+    categoryToEdit: Category? = null, // ✅ Thêm tham số này để nhận dữ liệu cần sửa
+    onSave: (Category) -> Unit
 ) {
-    var categoryName by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(categoryColors[3]) } // Mặc định xanh lá
-    var selectedIconId by remember { mutableStateOf<Int?>(null) }
+    // ✅ Khởi tạo state dựa trên categoryToEdit (nếu có)
+    var categoryName by remember { mutableStateOf(categoryToEdit?.name ?: "") }
+    var selectedColor by remember { mutableStateOf(categoryToEdit?.color ?: categoryColors[3]) }
 
     // Danh sách icons (sử dụng các icon có sẵn trong project)
     val categoryIcons = remember {
@@ -79,6 +81,15 @@ fun CreateCategoryScreen(
             CategoryIcon(15, R.drawable.application)
         )
     }
+
+    // Tìm icon ID tương ứng từ resource ID
+    val initialIconId = remember {
+        if (categoryToEdit != null) {
+            categoryIcons.find { it.resourceId == categoryToEdit.icon }?.id
+        } else null
+    }
+
+    var selectedIconId by remember { mutableStateOf(initialIconId) }
 
     // Mặc định chọn icon đầu tiên
     LaunchedEffect(Unit) {
@@ -109,7 +120,7 @@ fun CreateCategoryScreen(
             }
 
             Text(
-                text = "Tạo Danh mục mới",
+                text = if (categoryToEdit != null) "Chỉnh sửa Danh mục" else "Tạo Danh mục mới",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -120,7 +131,14 @@ fun CreateCategoryScreen(
                     if (categoryName.isNotEmpty() && selectedIconId != null) {
                         val iconResource = categoryIcons.find { it.id == selectedIconId }?.resourceId
                         if (iconResource != null) {
-                            onSave(categoryName, selectedColor, iconResource)
+                            // ✅ Tạo object Category (giữ ID cũ nếu là sửa, tạo ID mới hoặc 0 nếu là thêm)
+                            val finalCategory = Category(
+                                id = categoryToEdit?.id ?: 0, // ID sẽ được xử lý ở ViewModel nếu là 0
+                                name = categoryName,
+                                icon = iconResource,
+                                color = selectedColor
+                            )
+                            onSave(finalCategory)
                         }
                     }
                 },
