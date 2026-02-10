@@ -83,7 +83,8 @@ fun MainScreenDemo(
                 )
 
                 3 -> StatisticsReportScreen(
-                    onBack = { scope.launch { pagerState.animateScrollToPage(0) } }
+                    onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                    financeViewModel = financeViewModel
                 )
 
                 4 -> SettingsScreen(

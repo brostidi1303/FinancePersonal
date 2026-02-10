@@ -78,8 +78,12 @@ fun AddTransactionHomeScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Format để hiển thị - SỬ DỤNG HÀM MỚI
     val dateLabel = getDateDisplayText(selectedDate)
+
+    // dateToSave: Để lưu vào database (luôn là "dd/MM/yyyy")
+    val dateToSave = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        .format(selectedDate.time)
+
     val timeLabel = SimpleDateFormat("HH:mm", Locale.getDefault()).format(selectedDate.time)
 
     // --- DIALOG THÔNG BÁO LỖI ---
@@ -372,8 +376,8 @@ fun AddTransactionHomeScreen(
                                 amountValue,
                                 selectedCategory!!,
                                 isIncome,
-                                finalDateLabel,
-                                finalTimeLabel,
+                                dateToSave,  // ✅ "05/02/2026" thay vì "Thứ Năm"
+                                timeLabel,
                                 note
                             )
                         }
@@ -400,27 +404,22 @@ fun AddTransactionHomeScreen(
     }
 }
 
-// ✅ HÀM MỚI: Hiển thị thứ trong tuần hoặc ngày tháng
+// Các hàm helper giữ nguyên
 fun getDateDisplayText(calendar: Calendar): String {
     val today = Calendar.getInstance()
 
-    // Kiểm tra xem có phải hôm nay không
     if (isToday(calendar)) {
         return "Hôm nay"
     }
 
-    // Kiểm tra xem có trong tuần hiện tại không
     if (isInCurrentWeek(calendar, today)) {
         return getDayOfWeekName(calendar)
     }
 
-    // Nếu không, hiển thị ngày tháng bình thường
     return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
 }
 
-// ✅ HÀM KIỂM TRA CÓ TRONG TUẦN HIỆN TẠI KHÔNG
 fun isInCurrentWeek(calendar: Calendar, today: Calendar): Boolean {
-    // Lấy ngày đầu tuần (Thứ Hai)
     val startOfWeek = today.clone() as Calendar
     startOfWeek.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
     startOfWeek.set(Calendar.HOUR_OF_DAY, 0)
@@ -428,19 +427,16 @@ fun isInCurrentWeek(calendar: Calendar, today: Calendar): Boolean {
     startOfWeek.set(Calendar.SECOND, 0)
     startOfWeek.set(Calendar.MILLISECOND, 0)
 
-    // Lấy ngày cuối tuần (Chủ Nhật)
     val endOfWeek = startOfWeek.clone() as Calendar
     endOfWeek.add(Calendar.DAY_OF_WEEK, 6)
     endOfWeek.set(Calendar.HOUR_OF_DAY, 23)
     endOfWeek.set(Calendar.MINUTE, 59)
     endOfWeek.set(Calendar.SECOND, 59)
 
-    // Kiểm tra calendar có nằm trong khoảng [startOfWeek, endOfWeek] không
     return calendar.timeInMillis >= startOfWeek.timeInMillis &&
             calendar.timeInMillis <= endOfWeek.timeInMillis
 }
 
-// ✅ HÀM LẤY TÊN THỨ TRONG TUẦN
 fun getDayOfWeekName(calendar: Calendar): String {
     return when (calendar.get(Calendar.DAY_OF_WEEK)) {
         Calendar.MONDAY -> "Thứ Hai"

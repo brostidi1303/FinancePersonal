@@ -79,7 +79,10 @@ fun MainApp(
             }
 
             composable(Screen.Statistics.route) {
-                StatisticsReportScreen(onBack = { navController.popBackStack() })
+                StatisticsReportScreen(
+                    onBack = { navController.popBackStack() },
+                    financeViewModel = financeViewModel
+                )
             }
 
             composable(Screen.Profile.route) {

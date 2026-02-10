@@ -1,6 +1,7 @@
 package com.example.financeapp.ui.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +20,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.financeapp.data.APP_CATEGORIES
+import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
@@ -26,42 +29,49 @@ import com.example.financeapp.ui.home.GreenPositive
 import com.example.financeapp.ui.home.PrimaryBlue
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
-
-enum class FilterType {
-    TIME, CATEGORY, ACCOUNT
-}
 
 @Composable
 fun TransactionHistoryScreen(
     onBack: () -> Unit,
-    financeViewModel: FinanceViewModel // NHẬN TRANSACTIONS TỪ MAINAPP
+    financeViewModel: FinanceViewModel
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedTimeFilter by remember { mutableStateOf("Tháng này") }
-    var selectedCategoryFilter by remember { mutableStateOf("Danh mục") }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+
+    // ✅ SỬA LỖI 1: Đổi tên biến để không bị trùng
+    var showCategoryMenu by remember { mutableStateOf(false) }
+
     val transactions = financeViewModel.transactions
 
-    // ✅ Lọc transactions theo searchQuery
-    val filteredTransactions = remember(transactions.toList(), searchQuery) {
-        if (searchQuery.isEmpty()) {
-            transactions.toList()
-        } else {
-            transactions.filter { transaction ->
+    val filteredTransactions = remember(transactions.toList(), searchQuery, selectedCategory) {
+        var result = transactions.toList()
+
+        if (searchQuery.isNotEmpty()) {
+            result = result.filter { transaction ->
                 transaction.title.contains(searchQuery, ignoreCase = true) ||
                         transaction.note.contains(searchQuery, ignoreCase = true) ||
                         transaction.amount.toString().contains(searchQuery)
             }
         }
+
+        val category = selectedCategory
+        if (category != null) {
+            result = result.filter { transaction ->
+                transaction.title == category.name
+            }
+        }
+
+        result
     }
 
-    // Nhóm transactions theo ngày
     val groupedTransactions = remember(filteredTransactions) {
-        filteredTransactions.groupBy { it.date }  // ✅ Nhóm theo "Hôm nay" hoặc "dd/MM/yyyy"
+        filteredTransactions.groupBy { it.date }
     }
 
-    // Tính tổng chi tiêu và thu nhập (dựa trên filteredTransactions)
     val totalExpense = filteredTransactions.filter { !it.isIncome }.sumOf { it.amount }
     val totalIncome = filteredTransactions.filter { it.isIncome }.sumOf { it.amount }
 
@@ -70,33 +80,43 @@ fun TransactionHistoryScreen(
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        // Header with back button
         HistoryHeader(onBack = onBack)
 
-        // Search bar
         SearchBar(
             query = searchQuery,
             onQueryChange = { searchQuery = it }
         )
 
-        // Filter chips
-        FilterChipsRow(
-            selectedTimeFilter = selectedTimeFilter,
-            selectedCategoryFilter = selectedCategoryFilter,
-            onTimeFilterClick = { /* Show time filter dialog */ },
-            onCategoryFilterClick = { /* Show category filter dialog */ },
-            onAccountFilterClick = { /* Show account filter dialog */ }
-        )
+        // ✅ SỬA LỖI 2: Bọc FilterChipsRow trong Box để DropdownMenu có anchor
+        Box {
+            FilterChipsRow(
+                selectedTimeFilter = selectedTimeFilter,
+                selectedCategory = selectedCategory,
+                onTimeFilterClick = { /* Show time filter dialog */ },
+                onCategoryFilterClick = {
+                    showCategoryMenu = true  // ✅ Set thành true
+                },
+                onAccountFilterClick = { /* Show account filter dialog */ }
+            )
 
-        // Summary cards
+            // ✅ DropdownMenu phải nằm trong cùng Box với anchor (FilterChipsRow)
+            CategoryDropdownMenu(
+                expanded = showCategoryMenu,
+                onDismiss = { showCategoryMenu = false },
+                selectedCategory = selectedCategory,
+                onCategorySelected = { category ->
+                    selectedCategory = category
+                    showCategoryMenu = false  // ✅ Đóng menu sau khi chọn
+                }
+            )
+        }
+
         SummaryCards(
             totalExpense = totalExpense,
             totalIncome = totalIncome
         )
 
-        // Transaction list grouped by date
         if (filteredTransactions.isEmpty()) {
-            // Hiển thị khi không có giao dịch (hoặc không tìm thấy kết quả)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -115,7 +135,11 @@ fun TransactionHistoryScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = if (searchQuery.isEmpty()) "Chưa có giao dịch" else "Không tìm thấy kết quả",
+                        text = when {
+                            searchQuery.isNotEmpty() -> "Không tìm thấy kết quả"
+                            selectedCategory != null -> "Không có giao dịch trong danh mục này"
+                            else -> "Chưa có giao dịch"
+                        },
                         color = Color.Gray,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
@@ -135,9 +159,11 @@ fun TransactionHistoryScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-
-                            ) {
-                            DateGroupHeader(dateGroup = date, time = transactionsForDate.firstOrNull()?.time ?: "")
+                        ) {
+                            DateGroupHeader(
+                                dateGroup = date,
+                                time = transactionsForDate.firstOrNull()?.time ?: ""
+                            )
                         }
                     }
 
@@ -146,6 +172,76 @@ fun TransactionHistoryScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun CategoryDropdownMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    selectedCategory: Category?,
+    onCategorySelected: (Category?) -> Unit
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .width(250.dp)
+            .background(CardBackground)
+            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+    ) {
+        // Option: Tất cả danh mục
+        DropdownMenuItem(
+            text = {
+                Text("Tất cả danh mục", color = Color.White)
+            },
+            leadingIcon = {
+                Icon(Icons.Default.List, null, tint = Color.White)
+            },
+            trailingIcon = {
+                if (selectedCategory == null) {
+                    Icon(Icons.Default.Check, null, tint = PrimaryBlue)
+                }
+            },
+            onClick = {
+                onCategorySelected(null)
+            }
+        )
+
+        Divider(color = Color.White.copy(alpha = 0.1f))
+
+        // Danh sách Category
+        APP_CATEGORIES.forEach { category ->
+            DropdownMenuItem(
+                text = {
+                    Text(category.name, color = Color.White)
+                },
+                leadingIcon = {
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(category.color.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = category.icon),
+                            contentDescription = null,
+                            tint = category.color,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                },
+                trailingIcon = {
+                    if (selectedCategory?.id == category.id) {
+                        Icon(Icons.Default.Check, null, tint = PrimaryBlue)
+                    }
+                },
+                onClick = {
+                    onCategorySelected(category)
+                }
+            )
         }
     }
 }
@@ -233,7 +329,7 @@ fun SearchBar(
 @Composable
 fun FilterChipsRow(
     selectedTimeFilter: String,
-    selectedCategoryFilter: String,
+    selectedCategory: Category?,
     onTimeFilterClick: () -> Unit,
     onCategoryFilterClick: () -> Unit,
     onAccountFilterClick: () -> Unit
@@ -251,8 +347,8 @@ fun FilterChipsRow(
         )
 
         FilterChip(
-            text = selectedCategoryFilter,
-            isSelected = false,
+            text = selectedCategory?.name ?: "Danh mục",
+            isSelected = selectedCategory != null,
             onClick = onCategoryFilterClick
         )
     }
@@ -302,7 +398,6 @@ fun SummaryCards(
             .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Total Expense Card
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -328,7 +423,6 @@ fun SummaryCards(
             }
         }
 
-        // Total Income Card
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -358,6 +452,9 @@ fun SummaryCards(
 
 @Composable
 fun DateGroupHeader(dateGroup: String, time: String) {
+    // ✅ Tính toán lại format từ dd/MM/yyyy
+    val displayDate = getDisplayDateFromStored(dateGroup)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -366,7 +463,7 @@ fun DateGroupHeader(dateGroup: String, time: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = dateGroup,
+            text = displayDate,  // ✅ "Hôm nay" hoặc "Thứ Hai" hoặc "05/02/2026"
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
@@ -424,12 +521,10 @@ fun HistoryTransactionItem(transaction: Transaction) {
                     )
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // ✅ HIỂN THỊ TIME VÀ NOTE
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        // Time
                         Text(
                             text = transaction.time,
                             fontSize = 13.sp,
@@ -437,7 +532,6 @@ fun HistoryTransactionItem(transaction: Transaction) {
                             maxLines = 1
                         )
 
-                        // Note (nếu có)
                         if (transaction.note.isNotEmpty()) {
                             Text(
                                 text = "•",
@@ -470,4 +564,78 @@ fun HistoryTransactionItem(transaction: Transaction) {
 fun formatCurrency(amount: Double): String {
     val format = NumberFormat.getNumberInstance(Locale("vi", "VN"))
     return format.format(amount)
+}
+
+// ✅ HÀM MỚI: Parse và format lại date
+fun getDisplayDateFromStored(storedDate: String): String {
+    val today = Calendar.getInstance()
+
+    // Parse "dd/MM/yyyy" thành Calendar
+    return try {
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val date = sdf.parse(storedDate)
+
+        if (date != null) {
+            val calendar = Calendar.getInstance().apply { time = date }
+
+            // Kiểm tra hôm nay
+            if (isToday(calendar)) {
+                return "Hôm nay"
+            }
+
+            // Kiểm tra trong tuần hiện tại
+            if (isInCurrentWeek(calendar, today)) {
+                return getDayOfWeekName(calendar)
+            }
+
+            // Ngoài tuần → Trả về dd/MM/yyyy
+            storedDate
+        } else {
+            storedDate
+        }
+    } catch (e: Exception) {
+        // Nếu parse lỗi, trả về nguyên bản
+        storedDate
+    }
+}
+
+// ✅ Copy các hàm helper
+fun isToday(calendar: Calendar): Boolean {
+    val today = Calendar.getInstance()
+    return calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+            calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+}
+
+fun isInCurrentWeek(calendar: Calendar, today: Calendar): Boolean {
+    // Lấy ngày đầu tuần (Thứ Hai)
+    val startOfWeek = today.clone() as Calendar
+    startOfWeek.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    startOfWeek.set(Calendar.HOUR_OF_DAY, 0)
+    startOfWeek.set(Calendar.MINUTE, 0)
+    startOfWeek.set(Calendar.SECOND, 0)
+    startOfWeek.set(Calendar.MILLISECOND, 0)
+
+    // Lấy ngày cuối tuần (Chủ Nhật)
+    val endOfWeek = startOfWeek.clone() as Calendar
+    endOfWeek.add(Calendar.DAY_OF_WEEK, 6)
+    endOfWeek.set(Calendar.HOUR_OF_DAY, 23)
+    endOfWeek.set(Calendar.MINUTE, 59)
+    endOfWeek.set(Calendar.SECOND, 59)
+
+    // Kiểm tra calendar có nằm trong khoảng [startOfWeek, endOfWeek] không
+    return calendar.timeInMillis >= startOfWeek.timeInMillis &&
+            calendar.timeInMillis <= endOfWeek.timeInMillis
+}
+
+fun getDayOfWeekName(calendar: Calendar): String {
+    return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> "Thứ Hai"
+        Calendar.TUESDAY -> "Thứ Ba"
+        Calendar.WEDNESDAY -> "Thứ Tư"
+        Calendar.THURSDAY -> "Thứ Năm"
+        Calendar.FRIDAY -> "Thứ Sáu"
+        Calendar.SATURDAY -> "Thứ Bảy"
+        Calendar.SUNDAY -> "Chủ Nhật"
+        else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
+    }
 }

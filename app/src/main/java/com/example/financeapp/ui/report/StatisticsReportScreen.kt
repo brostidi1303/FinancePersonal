@@ -22,14 +22,17 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financeapp.data.APP_CATEGORIES
 import com.example.financeapp.ui.history.formatCurrency
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.viewModel.FinanceViewModel
 
 data class CategoryExpense(
     val id: Int,
@@ -37,24 +40,24 @@ data class CategoryExpense(
     val amount: Double,
     val percentage: Float,
     val color: Color,
-    val icon: ImageVector
+    val icon: Int
 )
 
 @Composable
-fun StatisticsReportScreen(onBack: () -> Unit) {
-    var selectedMonth by remember { mutableStateOf("Tháng 10, 2023") }
+fun StatisticsReportScreen(
+    onBack: () -> Unit,
+    financeViewModel: FinanceViewModel
+) {
+    var selectedMonth by remember { mutableStateOf("Tháng này") }
 
-    val categories = remember {
-        listOf(
-            CategoryExpense(1, "Ăn uống", 6000000.0, 0.40f, Color(0xFFE91E63), Icons.Default.Share),
-            CategoryExpense(2, "Di chuyển", 3000000.0, 0.20f, Color(0xFF2196F3), Icons.Default.Share),
-            CategoryExpense(3, "Mua sắm", 2250000.0, 0.15f, Color(0xFF00BCD4), Icons.Default.Share),
-            CategoryExpense(4, "Giải trí", 1500000.0, 0.10f, Color(0xFF9C27B0), Icons.Default.Share),
-            CategoryExpense(5, "Khác", 2250000.0, 0.15f, Color(0xFFFF9800), Icons.Default.Share),
-        )
+    val transactions = financeViewModel.transactions
+
+    // ✅ Tính toán dữ liệu thật từ transactions
+    val categoryExpenses = remember(transactions.toList()) {
+        calculateCategoryExpenses(transactions.toList())
     }
 
-    val totalExpense = categories.sumOf { it.amount }
+    val totalExpense = categoryExpenses.sumOf { it.amount }
 
     Column(
         modifier = Modifier
@@ -64,82 +67,143 @@ fun StatisticsReportScreen(onBack: () -> Unit) {
         // Header
         StatisticsHeader(onBack = onBack)
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            item {
-                // Total spending section
+        if (categoryExpenses.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Chi tiêu tháng này",
-                        fontSize = 16.sp,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "${formatCurrency(totalExpense)} đ",
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Month selector
-                    MonthSelector(
-                        selectedMonth = selectedMonth,
-                        onMonthChange = { selectedMonth = it }
-                    )
-                }
-            }
-
-            item {
-                // Donut Chart
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(320.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DonutChart(
-                        categories = categories,
-                        modifier = Modifier.size(280.dp)
-                    )
-                }
-            }
-
-            item {
-                // Category breakdown header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     Text(
-                        text = "Chi tiết danh mục",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Xem tất cả",
-                        fontSize = 14.sp,
-                        color = PrimaryBlue
+                        text = "Chưa có dữ liệu chi tiêu",
+                        color = Color.Gray,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                item {
+                    // Total spending section
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Chi tiêu tháng này",
+                            fontSize = 16.sp,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${formatCurrency(totalExpense)} đ",
+                            fontSize = 40.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-            items(categories) { category ->
-                CategoryItem(category)
+                        // Month selector
+                        MonthSelector(
+                            selectedMonth = selectedMonth,
+                            onMonthChange = { selectedMonth = it }
+                        )
+                    }
+                }
+
+                item {
+                    // Donut Chart
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(320.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        DonutChart(
+                            categories = categoryExpenses,
+                            modifier = Modifier.size(280.dp)
+                        )
+                    }
+                }
+
+                item {
+                    // Category breakdown header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Chi tiết danh mục",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                items(categoryExpenses) { category ->
+                    CategoryItem(category)
+                }
             }
         }
     }
+}
+
+// ✅ HÀM TÍNH TOÁN CATEGORY EXPENSES TỪ TRANSACTIONS
+fun calculateCategoryExpenses(transactions: List<com.example.financeapp.data.Transaction>): List<CategoryExpense> {
+    // Lọc chỉ lấy expense (không phải income)
+    val expenses = transactions.filter { !it.isIncome }
+
+    if (expenses.isEmpty()) {
+        return emptyList()
+    }
+
+    // Tính tổng chi tiêu
+    val totalExpense = expenses.sumOf { it.amount }
+
+    // Nhóm theo category (title)
+    val groupedByCategory = expenses.groupBy { it.title }
+
+    // Tạo CategoryExpense cho mỗi nhóm
+    val categoryExpenses = groupedByCategory.map { (categoryName, transactionsInCategory) ->
+        val categoryTotal = transactionsInCategory.sumOf { it.amount }
+        val percentage = (categoryTotal / totalExpense).toFloat()
+
+        // Tìm category info từ APP_CATEGORIES
+        val categoryInfo = APP_CATEGORIES.find { it.name == categoryName }
+
+        CategoryExpense(
+            id = categoryInfo?.id ?: 0,
+            name = categoryName,
+            amount = categoryTotal,
+            percentage = percentage,
+            color = categoryInfo?.color ?: Color.Gray,
+            icon = categoryInfo?.icon ?: com.example.financeapp.R.drawable.application
+        )
+    }
+
+    // Sắp xếp theo amount giảm dần
+    return categoryExpenses.sortedByDescending { it.amount }
 }
 
 @Composable
@@ -310,7 +374,7 @@ fun CategoryItem(category: CategoryExpense) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = category.icon,
+                        painter = painterResource(id = category.icon),
                         contentDescription = null,
                         tint = category.color,
                         modifier = Modifier.size(24.dp)
