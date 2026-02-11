@@ -62,6 +62,7 @@ fun MainScreenDemo(
                 2 -> AddTransactionHomeScreen(
                     onDismiss = { scope.launch { pagerState.animateScrollToPage(0) } },
                     defaultIsIncome = false,
+                    financeViewModel = financeViewModel,
                     onAddTransaction = { amount, category, isIncome, date, time, note -> // ✅ THÊM category
                         val newTransaction = Transaction(
                             id = transactions.size + 1,

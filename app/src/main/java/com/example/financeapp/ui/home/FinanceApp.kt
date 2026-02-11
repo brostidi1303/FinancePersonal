@@ -122,6 +122,7 @@ fun FinanceApp(
             AddTransactionHomeScreen(
                 onDismiss = { showAddTransaction = false },
                 defaultIsIncome = true,
+                financeViewModel = financeViewModel,
                 onAddTransaction = { amount, category, isIncome, date, time, note ->  // ✅ Tách date và time
                     val newTransaction = Transaction(
                         id = transactions.size + 1,

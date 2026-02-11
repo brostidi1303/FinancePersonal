@@ -92,6 +92,7 @@ fun MainApp(
                 AddTransactionHomeScreen(
                     onDismiss = { navController.popBackStack() },
                     defaultIsIncome = false,
+                    financeViewModel = financeViewModel,
                     onAddTransaction = { _, _, _, _, _, _ -> navController.popBackStack() },
                     onEditCategories = {
                         navController.navigate(Screen.CategoryManagement.route)

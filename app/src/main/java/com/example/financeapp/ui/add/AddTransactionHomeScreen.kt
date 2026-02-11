@@ -60,6 +60,7 @@ import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.CategoryItem1
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -69,7 +70,8 @@ fun AddTransactionHomeScreen(
     onDismiss: () -> Unit,
     defaultIsIncome: Boolean = true,
     onAddTransaction: (Double, Category, Boolean, String, String, String) -> Unit,
-    onEditCategories: () -> Unit = {}  // ✅ Thêm callback
+    onEditCategories: () -> Unit = {},
+    financeViewModel: FinanceViewModel  // ✅ THÊM: Nhận ViewModel
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -94,7 +96,8 @@ fun AddTransactionHomeScreen(
         .format(selectedDate.time)
 
     val timeLabel = SimpleDateFormat("HH:mm", Locale.getDefault()).format(selectedDate.time)
-
+// ✅ SỬA: Lấy categories từ ViewModel thay vì APP_CATEGORIES
+    val categories = financeViewModel.categories
     // --- DIALOG THÔNG BÁO LỖI ---
     if (showErrorDialog) {
         AlertDialog(
@@ -343,13 +346,14 @@ fun AddTransactionHomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // ✅ SỬA: Dùng categories từ ViewModel
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(4),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.height(200.dp)
                 ) {
-                    items(APP_CATEGORIES) { category ->
+                    items(categories) { category ->  // ✅ Thay APP_CATEGORIES thành categories
                         CategoryItem1(
                             category = category,
                             isSelected = selectedCategory == category,
