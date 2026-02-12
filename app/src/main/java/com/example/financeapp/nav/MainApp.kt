@@ -17,11 +17,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.financeapp.data.Category
+import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.main.BottomNavigationBar
 import com.example.financeapp.ui.history.TransactionHistoryScreen
 import com.example.financeapp.ui.add.AddTransactionHomeScreen
 import com.example.financeapp.ui.add.CategoryManagementScreen
 import com.example.financeapp.ui.add.CreateCategoryScreen
+import com.example.financeapp.ui.add.EditTransactionScreen
+import com.example.financeapp.ui.add.TransactionDetailScreen
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.main.MainScreenDemo
@@ -38,7 +41,10 @@ fun MainApp(
     var currentPage by remember { mutableIntStateOf(0) }
     var targetPage by remember { mutableIntStateOf(0) }
     var categoryEditing by remember { mutableStateOf<Category?>(null) }
-    // ✅ Lấy route hiện tại để ẩn/hiện BottomBar
+    // ✅ THÊM: State để lưu transaction được chọn
+    var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
+    var editingTransaction by remember { mutableStateOf<Transaction?>(null) }
+    // Lấy route hiện tại để ẩn/hiện BottomBar
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Scaffold(
@@ -70,6 +76,10 @@ fun MainApp(
                     targetPage = targetPage,
                     onNavigateToCategoryManagement = { // ✅ Navigate ra ngoài
                         navController.navigate(Screen.CategoryManagement.route)
+                    },
+                    onNavigateToTransactionDetail = { transaction ->
+                        selectedTransaction = transaction
+                        navController.navigate(Screen.TransactionDetail.route)
                     }
                 )
             }
@@ -84,7 +94,12 @@ fun MainApp(
             composable(Screen.History.route) {
                 TransactionHistoryScreen(
                     onBack = { navController.popBackStack() },
-                    financeViewModel = financeViewModel
+                    financeViewModel = financeViewModel,
+                    // ✅ SỬA: Thêm onTransactionClick
+                    onTransactionClick = { transaction ->
+                        selectedTransaction = transaction
+                        navController.navigate(Screen.TransactionDetail.route)
+                    }
                 )
             }
 
@@ -107,9 +122,11 @@ fun MainApp(
                 )
             }
 
+            // ✅ SỬA: Truyền financeViewModel vào SettingsScreen
             composable(Screen.Profile.route) {
                 SettingsScreen(
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    financeViewModel = financeViewModel  // ✅
                 )
             }
 
@@ -140,6 +157,44 @@ fun MainApp(
                     }
                 )
             }
+
+            // ✅ THÊM: Route cho TransactionDetail
+            composable(Screen.TransactionDetail.route) {
+                selectedTransaction?.let { transaction ->
+                    TransactionDetailScreen(
+                        transaction = transaction,
+                        onBack = { navController.popBackStack() },
+                        onEdit = {
+                            editingTransaction = transaction   // ← lưu transaction cần edit
+                            navController.navigate(Screen.EditTransaction.route)  // ← navigate đúng chỗ
+                        },
+                        onDelete = {
+                            financeViewModel.removeTransaction(transaction)
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
+
+            composable(Screen.EditTransaction.route) {
+                editingTransaction?.let { transaction ->
+                    EditTransactionScreen(
+                        transaction = transaction,
+                        financeViewModel = financeViewModel,
+                        onDismiss = { navController.popBackStack() },
+                        onUpdate = { updatedTransaction ->
+                            financeViewModel.updateTransaction(transaction, updatedTransaction)
+                            selectedTransaction = updatedTransaction
+                            navController.popBackStack()
+                        },
+                        onDelete = {
+                            financeViewModel.removeTransaction(transaction)
+                            navController.popBackStack() // thoát Edit
+                            navController.popBackStack() // thoát Detail
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -153,4 +208,6 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object CategoryManagement : Screen("category_management")
     object CreateCategory : Screen("create_category")
+    object TransactionDetail : Screen("transaction_detail")  // ✅ THÊM
+    object EditTransaction : Screen("edit_transaction")
 }

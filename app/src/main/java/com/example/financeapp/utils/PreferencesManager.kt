@@ -11,6 +11,7 @@ import com.google.gson.TypeAdapter
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
+import kotlin.apply
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
@@ -74,6 +75,15 @@ class PreferencesManager(context: Context) {
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    // ✅ THÊM 2 hàm này vào PreferencesManager
+    fun saveDarkMode(isDark: Boolean) {
+        prefs.edit().putBoolean("dark_mode", isDark).apply()
+    }
+
+    fun getDarkMode(): Boolean {
+        return prefs.getBoolean("dark_mode", true) // default: dark
     }
 
     // Clear all data

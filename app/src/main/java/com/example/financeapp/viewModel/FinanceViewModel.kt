@@ -37,6 +37,10 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     private val _categories = mutableStateListOf<Category>()
     val categories: SnapshotStateList<Category> = _categories
 
+    // ✅ Dark mode state - DI CHUYỂN LÊN TRƯỚC init BLOCK
+    private val _isDarkMode = MutableStateFlow(true)
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
     init {
         loadData()
     }
@@ -62,6 +66,7 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             } else {
                 _categories.addAll(savedCategories)
             }
+            _isDarkMode.value = prefsManager.getDarkMode()
         }
     }
 
@@ -328,5 +333,17 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         return _transactions.sortedByDescending { transaction ->
             getTransactionCalendar(transaction)?.timeInMillis ?: 0L
         }
+    }
+
+    // ==================== DARK MODE MANAGEMENT ====================
+
+    fun toggleDarkMode() {
+        _isDarkMode.value = !_isDarkMode.value
+        prefsManager.saveDarkMode(_isDarkMode.value)
+    }
+
+    fun setDarkMode(isDark: Boolean) {
+        _isDarkMode.value = isDark
+        prefsManager.saveDarkMode(isDark)
     }
 }

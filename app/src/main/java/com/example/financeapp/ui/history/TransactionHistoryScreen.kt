@@ -36,7 +36,8 @@ import kotlin.math.abs
 @Composable
 fun TransactionHistoryScreen(
     onBack: () -> Unit,
-    financeViewModel: FinanceViewModel
+    financeViewModel: FinanceViewModel,
+    onTransactionClick: (Transaction) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedTimeFilter by remember { mutableStateOf("Tháng này") }
@@ -168,7 +169,10 @@ fun TransactionHistoryScreen(
                     }
 
                     items(transactionsForDate) { transaction ->
-                        HistoryTransactionItem(transaction)
+                        HistoryTransactionItem(
+                            transaction,
+                            onClick = { onTransactionClick(transaction) }
+                        )
                     }
                 }
             }
@@ -478,13 +482,17 @@ fun DateGroupHeader(dateGroup: String, time: String) {
 }
 
 @Composable
-fun HistoryTransactionItem(transaction: Transaction) {
+fun HistoryTransactionItem(
+    transaction: Transaction,
+    onClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(CardBackground)
             .padding(16.dp)
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

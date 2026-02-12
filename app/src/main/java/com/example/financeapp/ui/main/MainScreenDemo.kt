@@ -24,7 +24,8 @@ fun MainScreenDemo(
     financeViewModel: FinanceViewModel, // Nhận ViewModel thay vì từng state riêng lẻ
     onPageChanged: (Int) -> Unit,
     targetPage: Int,
-    onNavigateToCategoryManagement: () -> Unit = {}
+    onNavigateToCategoryManagement: () -> Unit = {},
+    onNavigateToTransactionDetail: (Transaction) -> Unit = {}  // ✅ THÊM callback
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
     val scope = rememberCoroutineScope()
@@ -56,7 +57,10 @@ fun MainScreenDemo(
 
                 1 -> TransactionHistoryScreen(
                     onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-                    financeViewModel = financeViewModel
+                    financeViewModel = financeViewModel,
+                    onTransactionClick = { transaction ->
+                        onNavigateToTransactionDetail(transaction)
+                    }
                 )
 
                 2 -> AddTransactionHomeScreen(
@@ -91,7 +95,8 @@ fun MainScreenDemo(
                 )
 
                 4 -> SettingsScreen(
-                    onBack = { scope.launch { pagerState.animateScrollToPage(0) } }
+                    onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                    financeViewModel = financeViewModel
                 )
             }
         }
