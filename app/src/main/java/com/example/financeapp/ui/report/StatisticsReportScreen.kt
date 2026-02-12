@@ -32,6 +32,7 @@ import com.example.financeapp.ui.history.formatCurrency
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 
 data class CategoryExpense(
@@ -49,7 +50,7 @@ fun StatisticsReportScreen(
     financeViewModel: FinanceViewModel
 ) {
     var selectedMonth by remember { mutableStateOf("Tháng này") }
-
+    val colors = AppTheme.colors
     val transactions = financeViewModel.transactions
 
     // ✅ Tính toán dữ liệu thật từ transactions
@@ -62,7 +63,7 @@ fun StatisticsReportScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
     ) {
         // Header
         StatisticsHeader(onBack = onBack)
@@ -82,13 +83,13 @@ fun StatisticsReportScreen(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Chưa có dữ liệu chi tiêu",
-                        color = Color.Gray,
+                        color = colors.textSecondary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -111,14 +112,14 @@ fun StatisticsReportScreen(
                         Text(
                             text = "Chi tiêu tháng này",
                             fontSize = 16.sp,
-                            color = Color.White.copy(alpha = 0.6f)
+                            color = colors.textSecondary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "${formatCurrency(totalExpense)} đ",
                             fontSize = 40.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = colors.textPrimary
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -156,7 +157,7 @@ fun StatisticsReportScreen(
                             text = "Chi tiết danh mục",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = colors.textPrimary
                         )
                     }
                 }
@@ -208,6 +209,7 @@ fun calculateCategoryExpenses(transactions: List<com.example.financeapp.data.Tra
 
 @Composable
 fun StatisticsHeader(onBack: () -> Unit) {
+    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,7 +221,7 @@ fun StatisticsHeader(onBack: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = colors.textPrimary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -228,14 +230,14 @@ fun StatisticsHeader(onBack: () -> Unit) {
             text = "Báo cáo Thống kê",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.textPrimary
         )
 
         IconButton(onClick = { /* Open calendar */ }) {
             Icon(
                 imageVector = Icons.Default.DateRange,
                 contentDescription = "Calendar",
-                tint = Color.White,
+                tint = colors.textPrimary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -247,10 +249,11 @@ fun MonthSelector(
     selectedMonth: String,
     onMonthChange: (String) -> Unit
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .clickable { /* Open month picker */ }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
@@ -262,12 +265,12 @@ fun MonthSelector(
                 text = selectedMonth,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.White
+                color = colors.textPrimary
             )
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = Color.White,
+                tint =  colors.textPrimary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -280,7 +283,7 @@ fun DonutChart(
     modifier: Modifier = Modifier
 ) {
     val animatedProgress = remember { Animatable(0f) }
-
+    val colors = AppTheme.colors
     LaunchedEffect(Unit) {
         animatedProgress.animateTo(
             targetValue = 1f,
@@ -334,7 +337,7 @@ fun DonutChart(
             Text(
                 text = "TỔNG CỘNG",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.6f),
+                color = colors.textSecondary,
                 letterSpacing = 1.sp
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -342,7 +345,7 @@ fun DonutChart(
                 text = "100%",
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = colors.textPrimary
             )
         }
     }
@@ -350,11 +353,12 @@ fun DonutChart(
 
 @Composable
 fun CategoryItem(category: CategoryExpense) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .padding(16.dp)
     ) {
         Row(
@@ -388,7 +392,7 @@ fun CategoryItem(category: CategoryExpense) {
                         text = category.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White
+                        color = colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
@@ -404,7 +408,7 @@ fun CategoryItem(category: CategoryExpense) {
                         Text(
                             text = "${(category.percentage * 100).toInt()}%",
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.6f)
+                            color = colors.textSecondary
                         )
                     }
                 }
@@ -414,7 +418,7 @@ fun CategoryItem(category: CategoryExpense) {
                 text = "${formatCurrency(category.amount)} đ",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = colors.textPrimary
             )
         }
     }

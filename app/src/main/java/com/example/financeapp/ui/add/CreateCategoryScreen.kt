@@ -27,6 +27,7 @@ import com.example.financeapp.data.Category
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
 
 // Danh sách màu sắc
 val categoryColors = listOf(
@@ -57,6 +58,7 @@ fun CreateCategoryScreen(
     categoryToEdit: Category? = null, // ✅ Thêm tham số này để nhận dữ liệu cần sửa
     onSave: (Category) -> Unit
 ) {
+    val colors = AppTheme.colors  // ✅ Lấy colors từ theme
     // ✅ Khởi tạo state dựa trên categoryToEdit (nếu có)
     var categoryName by remember { mutableStateOf(categoryToEdit?.name ?: "") }
     var selectedColor by remember { mutableStateOf(categoryToEdit?.color ?: categoryColors[3]) }
@@ -101,7 +103,7 @@ fun CreateCategoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
     ) {
         // Header
         Row(
@@ -114,7 +116,7 @@ fun CreateCategoryScreen(
             TextButton(onClick = onBack) {
                 Text(
                     text = "Hủy",
-                    color = Color.White,
+                    color =  colors.textPrimary,
                     fontSize = 16.sp
                 )
             }
@@ -123,7 +125,7 @@ fun CreateCategoryScreen(
                 text = if (categoryToEdit != null) "Chỉnh sửa Danh mục" else "Tạo Danh mục mới",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = colors.textPrimary
             )
 
             TextButton(
@@ -146,7 +148,7 @@ fun CreateCategoryScreen(
             ) {
                 Text(
                     text = "Lưu",
-                    color = if (categoryName.isNotEmpty() && selectedIconId != null) PrimaryBlue else Color.Gray,
+                    color = if (categoryName.isNotEmpty() && selectedIconId != null) PrimaryBlue else colors.textSecondary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -184,7 +186,7 @@ fun CreateCategoryScreen(
             text = categoryName.ifEmpty { "Sức khỏe" },
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = colors.textPrimary,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
@@ -200,7 +202,7 @@ fun CreateCategoryScreen(
             Text(
                 text = "TÊN DANH MỤC",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = colors.textSecondary,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -211,14 +213,14 @@ fun CreateCategoryScreen(
                 placeholder = {
                     Text(
                         text = "Sức khỏe",
-                        color = Color.White.copy(alpha = 0.3f)
+                        color = colors.textSecondary
                     )
                 },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = CardBackground,
-                    unfocusedContainerColor = CardBackground,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    focusedContainerColor = colors.cardBackground,  // ✅ Dùng theme color
+                    unfocusedContainerColor = colors.cardBackground,  // ✅ Dùng theme color
+                    focusedTextColor = colors.textPrimary,  // ✅ Dùng theme color
+                    unfocusedTextColor = colors.textPrimary,  // ✅ Dùng theme color
                     cursorColor = PrimaryBlue,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
@@ -235,7 +237,7 @@ fun CreateCategoryScreen(
             Text(
                 text = "CHỌN MÀU SẮC",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color =  colors.textSecondary,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -261,7 +263,7 @@ fun CreateCategoryScreen(
             Text(
                 text = "CHỌN BIỂU TƯỢNG",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = colors.textSecondary,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -290,6 +292,7 @@ fun ColorItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .size(48.dp)
@@ -297,7 +300,7 @@ fun ColorItem(
             .background(color)
             .then(
                 if (isSelected) {
-                    Modifier.border(3.dp, Color.White, CircleShape)
+                    Modifier.border(3.dp, colors.textPrimary, CircleShape)
                 } else {
                     Modifier
                 }
@@ -312,6 +315,7 @@ fun IconItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .size(60.dp)
@@ -334,7 +338,7 @@ fun IconItem(
             Icon(
                 painter = painterResource(id = resId),
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.8f),
+                tint = colors.textPrimary.copy(alpha = 0.8f),
                 modifier = Modifier.size(28.dp)
             )
         }

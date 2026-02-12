@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -20,15 +18,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
-import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
 
 @Composable
 fun navigationBarItemColors() = NavigationBarItemDefaults.colors(
     selectedIconColor = PrimaryBlue,
     selectedTextColor = PrimaryBlue,
-    unselectedIconColor = Color.White,
-    unselectedTextColor = Color.White,
+    unselectedIconColor = AppTheme.colors.textSecondary,  // ✅ Dùng theme color
+    unselectedTextColor = AppTheme.colors.textSecondary,  // ✅ Dùng theme color
     indicatorColor = Color.Transparent
 )
 
@@ -37,14 +35,16 @@ fun BottomNavigationBar(
     currentPage: Int,
     onTabSelected: (Int) -> Unit
 ) {
+    val colors = AppTheme.colors  // ✅ Lấy colors từ theme
+
     NavigationBar(
-        containerColor = CardBackground,
+        containerColor = colors.cardBackground,  // ✅ Dùng theme color thay vì CardBackground
         modifier = Modifier.height(70.dp)
     ) {
         NavigationBarItem(
             selected = currentPage == 0,
             onClick = { onTabSelected(0) },
-            icon = { Icon(Icons.Default.Home, null,modifier = Modifier.size(21.dp)) },
+            icon = { Icon(Icons.Default.Home, null, modifier = Modifier.size(21.dp)) },
             label = { Text("Home", fontSize = 11.sp) },
             colors = navigationBarItemColors()
         )
@@ -52,7 +52,7 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = currentPage == 1,
             onClick = { onTabSelected(1) },
-            icon = { Icon(painterResource(R.drawable.history), null,modifier = Modifier.size(21.dp)) },
+            icon = { Icon(painterResource(R.drawable.history), null, modifier = Modifier.size(21.dp)) },
             label = { Text("History", fontSize = 11.sp) },
             colors = navigationBarItemColors()
         )
@@ -60,7 +60,7 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = currentPage == 2,
             onClick = { onTabSelected(2) },
-            icon = { Icon(Icons.Default.Add, null,modifier = Modifier.size(21.dp)) },
+            icon = { Icon(Icons.Default.Add, null, modifier = Modifier.size(21.dp)) },
             label = { Text("Add", fontSize = 11.sp) },
             colors = navigationBarItemColors()
         )
@@ -76,8 +76,8 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = currentPage == 4,
             onClick = { onTabSelected(4) },
-            icon = { Icon(Icons.Default.Settings, null,modifier = Modifier.size(21.dp)) },
-            label = { Text("Report", fontSize = 11.sp) },
+            icon = { Icon(Icons.Default.Settings, null, modifier = Modifier.size(21.dp)) },
+            label = { Text("Profile", fontSize = 11.sp) },  // ✅ Sửa label từ "Report" thành "Profile"
             colors = navigationBarItemColors()
         )
     }

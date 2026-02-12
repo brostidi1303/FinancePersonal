@@ -29,11 +29,13 @@ import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.add.AddTransactionHomeScreen
 import com.example.financeapp.ui.history.formatCurrency
+import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 
 // Color scheme
-val DarkBackground = Color(0xFF0A0E27)
-val CardBackground = Color(0xFF1A1F3A)
+// ✅ GIỮ LẠI các màu cố định (không thay đổi theo theme)
+val DarkBackground = Color(0xFF0A0E27)  // Chỉ dùng cho backward compatibility
+val CardBackground = Color(0xFF1A1F3A)  // Chỉ dùng cho backward compatibility
 val PrimaryBlue = Color(0xFF587EF1)
 val LightBlue = Color(0xFF6B8DE3)
 val GreenPositive = Color(0xFF00C48C)
@@ -46,7 +48,8 @@ fun FinanceApp(
 ) {
     val context = LocalContext.current
     var showAddTransaction by remember { mutableStateOf(false) }
-
+    // ✅ Lấy colors từ theme
+    val colors = AppTheme.colors
     // Collect state từ ViewModel
     val totalBalance by financeViewModel.totalBalance.collectAsState()
     val initialBalance by financeViewModel.initialBalance.collectAsState()
@@ -78,7 +81,7 @@ fun FinanceApp(
                         "Recent Transactions",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = colors.textPrimary
                     )
                     if (transactions.isNotEmpty()) {
                         TextButton(onClick = { onViewAll() }) {
@@ -99,13 +102,13 @@ fun FinanceApp(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = Color.Gray,
+                            tint = colors.textSecondary,
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "No Record",
-                            color = Color.Gray,
+                            color = colors.textSecondary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -146,6 +149,7 @@ fun FinanceApp(
 
 @Composable
 fun HeaderSection() {
+    val colors = AppTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -173,13 +177,13 @@ fun HeaderSection() {
                 Text(
                     text = "Welcome back,",
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = colors.textSecondary
                 )
                 Text(
                     text = "Nguyen Tien Dat",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = colors.textPrimary
                 )
             }
         }
@@ -188,13 +192,13 @@ fun HeaderSection() {
             modifier = Modifier
                 .size(45.dp)
                 .clip(CircleShape)
-                .background(CardBackground),
+                .background(colors.cardBackground),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Notifications,
                 contentDescription = "Notifications",
-                tint = Color.White
+                tint = colors.textPrimary
             )
             Box(
                 modifier = Modifier
@@ -214,6 +218,7 @@ fun BalanceCard(
     initialBalance: Double,
     onAddClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     val percentage = when {
         // ⭐ CASE ĐẶC BIỆT: totalBalance == initialBalance
         initialBalance > 0.0 && totalBalance == initialBalance -> {
@@ -337,11 +342,12 @@ fun BalanceCard(
 
 @Composable
 fun TransactionItem(transaction: Transaction) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .padding(12.dp)
     ) {
         Row(
@@ -375,7 +381,7 @@ fun TransactionItem(transaction: Transaction) {
                         text = transaction.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White
+                        color = colors.textPrimary
                     )
 
                     Spacer(modifier = Modifier.height(5.dp))
@@ -390,12 +396,12 @@ fun TransactionItem(transaction: Transaction) {
                             Text(
                                 text = transaction.note,
                                 fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.5f)
+                                color = colors.textSecondary
                             )
                             Text(
                                 text = "•",
                                 fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.5f)
+                                color = colors.textSecondary
                             )
                         }
 
@@ -403,20 +409,20 @@ fun TransactionItem(transaction: Transaction) {
                         Text(
                             text = transaction.date,
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f)
+                            color = colors.textSecondary
                         )
 
                         Text(
                             text = "•",
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f)
+                            color = colors.textSecondary
                         )
 
                         // Time
                         Text(
                             text = transaction.time,
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f)
+                            color = colors.textSecondary
                         )
                     }
                 }
@@ -426,7 +432,7 @@ fun TransactionItem(transaction: Transaction) {
                 text = "${if (transaction.isIncome) "+" else ""}${formatCurrency(transaction.amount)} đ",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isIncome) GreenPositive else Color.White
+                color = if (transaction.isIncome) GreenPositive else colors.textPrimary
             )
         }
     }
@@ -438,6 +444,7 @@ fun CategoryItem1(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -449,7 +456,7 @@ fun CategoryItem1(
                 .size(60.dp)
                 .clip(CircleShape)
                 // Khi được chọn, dùng màu của category làm nền. Khi không chọn, dùng màu tối của card.
-                .background(if (isSelected) category.color else CardBackground),
+                .background(if (isSelected) category.color else colors.cardBackground),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -457,7 +464,7 @@ fun CategoryItem1(
                 contentDescription = category.name,
                 // QUAN TRỌNG: Khi nền đã có màu category, icon nên là màu Trắng để nổi bật.
                 // Khi chưa chọn, icon có thể là màu xám hoặc trắng mờ.
-                tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                tint = if (isSelected) Color.White else colors.textSecondary,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -466,7 +473,7 @@ fun CategoryItem1(
             text = category.name,
             fontSize = 11.sp,
             // Chữ cũng có thể đổi màu khi chọn để người dùng dễ nhận biết
-            color = if (isSelected) category.color else Color.White.copy(alpha = 0.8f),
+            color = if (isSelected) category.color else colors.textPrimary,
             textAlign = TextAlign.Center,
             maxLines = 1,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal

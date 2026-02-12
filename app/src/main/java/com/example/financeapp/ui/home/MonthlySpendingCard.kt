@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.example.financeapp.R
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.history.formatCurrency
+import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,7 +34,7 @@ data class WeekSpending(
 @Composable
 fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
     val transactions = financeViewModel.transactions
-
+    val colors = AppTheme.colors
     // Tính toán dữ liệu tháng hiện tại
     val monthlyData = remember(transactions.size) {
         calculateMonthlySpending(transactions.toList())
@@ -43,7 +44,7 @@ fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .padding(20.dp)
     ) {
         Column {
@@ -56,7 +57,7 @@ fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
                 Text(
                     text = "Monthly Spending",
                     fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = colors.textPrimary
                 )
 
                 // Percentage badge
@@ -97,7 +98,7 @@ fun MonthlySpendingCard(financeViewModel: FinanceViewModel) {
                 text = "${formatCurrency(monthlyData.currentMonthTotal)} đ",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = colors.textPrimary
             )
 
             Spacer(modifier = Modifier.height(20.dp))

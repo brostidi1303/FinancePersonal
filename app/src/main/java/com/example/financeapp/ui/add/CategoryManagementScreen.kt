@@ -21,6 +21,7 @@ import com.example.financeapp.data.Category
 import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 
 @Composable
@@ -30,6 +31,7 @@ fun CategoryManagementScreen(
     onNavigateToCreateOrEdit: (Category?) -> Unit,
     financeViewModel: FinanceViewModel
 ) {
+    val colors = AppTheme.colors
     var searchQuery by remember { mutableStateOf("") }
     var categoryToDelete by remember { mutableStateOf<Category?>(null) } // Chỉ giữ lại state xóa
 
@@ -51,7 +53,7 @@ fun CategoryManagementScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
     ) {
         Row(
             modifier = Modifier
@@ -61,9 +63,9 @@ fun CategoryManagementScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(24.dp))
+                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = colors.textPrimary, modifier = Modifier.size(24.dp))
             }
-            Text(text = "Danh mục", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(text = "Danh mục", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
             Spacer(modifier = Modifier.width(48.dp))
         }
 
@@ -104,8 +106,8 @@ fun CategoryManagementScreen(
     if (categoryToDelete != null) {
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
-            title = { Text(text = "Xóa danh mục", color = Color.White) },
-            text = { Text(text = "Bạn có chắc chắn muốn xóa danh mục \"${categoryToDelete!!.name}\"?", color = Color.White.copy(alpha = 0.8f)) },
+            title = { Text(text = "Xóa danh mục", color = colors.textPrimary) },
+            text = { Text(text = "Bạn có chắc chắn muốn xóa danh mục \"${categoryToDelete!!.name}\"?", color = colors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     financeViewModel.removeCategory(categoryToDelete!!)
@@ -119,7 +121,7 @@ fun CategoryManagementScreen(
                     Text("Hủy", color = PrimaryBlue)
                 }
             },
-            containerColor = CardBackground
+            containerColor = colors.cardBackground
         )
     }
 }
@@ -127,11 +129,12 @@ fun CategoryManagementScreen(
 // CategoryManagementItem giữ nguyên
 @Composable
 fun CategoryManagementItem(category: Category, onEdit: () -> Unit, onDelete: () -> Unit) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
@@ -147,14 +150,14 @@ fun CategoryManagementItem(category: Category, onEdit: () -> Unit, onDelete: () 
                     Icon(painter = painterResource(id = category.icon), contentDescription = null, tint = category.color, modifier = Modifier.size(28.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(text = category.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                Text(text = category.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(40.dp)) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = colors.textSecondary, modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = colors.textSecondary, modifier = Modifier.size(20.dp))
                 }
             }
         }
