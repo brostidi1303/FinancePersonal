@@ -27,6 +27,8 @@ import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.GreenPositive
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
+import com.example.financeapp.ui.theme.AppTheme.colors
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -39,6 +41,7 @@ fun TransactionHistoryScreen(
     financeViewModel: FinanceViewModel,
     onTransactionClick: (Transaction) -> Unit
 ) {
+    val colors = AppTheme.colors
     var searchQuery by remember { mutableStateOf("") }
     var selectedTimeFilter by remember { mutableStateOf("Tháng này") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -79,7 +82,7 @@ fun TransactionHistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
     ) {
         HistoryHeader(onBack = onBack)
 
@@ -131,7 +134,7 @@ fun TransactionHistoryScreen(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -141,7 +144,7 @@ fun TransactionHistoryScreen(
                             selectedCategory != null -> "Không có giao dịch trong danh mục này"
                             else -> "Chưa có giao dịch"
                         },
-                        color = Color.Gray,
+                        color = colors.textSecondary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -187,21 +190,22 @@ fun CategoryDropdownMenu(
     selectedCategory: Category?,
     onCategorySelected: (Category?) -> Unit
 ) {
+    val colors = AppTheme.colors
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
         modifier = Modifier
             .width(250.dp)
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
     ) {
         // Option: Tất cả danh mục
         DropdownMenuItem(
             text = {
-                Text("Tất cả danh mục", color = Color.White)
+                Text("Tất cả danh mục", color = colors.textPrimary)
             },
             leadingIcon = {
-                Icon(Icons.Default.List, null, tint = Color.White)
+                Icon(Icons.Default.List, null, tint = colors.textPrimary)
             },
             trailingIcon = {
                 if (selectedCategory == null) {
@@ -213,13 +217,13 @@ fun CategoryDropdownMenu(
             }
         )
 
-        Divider(color = Color.White.copy(alpha = 0.1f))
+        Divider(color = colors.divider)
 
         // Danh sách Category
         APP_CATEGORIES.forEach { category ->
             DropdownMenuItem(
                 text = {
-                    Text(category.name, color = Color.White)
+                    Text(category.name, color = colors.textPrimary)
                 },
                 leadingIcon = {
                     Box(
@@ -252,6 +256,7 @@ fun CategoryDropdownMenu(
 
 @Composable
 fun HistoryHeader(onBack: () -> Unit) {
+    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,7 +267,7 @@ fun HistoryHeader(onBack: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = colors.textPrimary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -273,7 +278,7 @@ fun HistoryHeader(onBack: () -> Unit) {
             text = "Lịch sử Giao dịch",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.textPrimary
         )
     }
 }
@@ -283,6 +288,7 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit
 ) {
+    val colors = AppTheme.colors
     TextField(
         value = query,
         onValueChange = onQueryChange,
@@ -294,14 +300,14 @@ fun SearchBar(
             Text(
                 text = "Tìm kiếm giao dịch",
                 fontSize = 15.sp,
-                color = Color.White.copy(alpha = 0.5f)
+                color = colors.textSecondary
             )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
-                tint = Color.White.copy(alpha = 0.5f),
+                tint = colors.textSecondary,
                 modifier = Modifier.size(20.dp)
             )
         },
@@ -311,17 +317,17 @@ fun SearchBar(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
-                        tint = Color.White.copy(alpha = 0.5f),
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
         },
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = CardBackground,
-            unfocusedContainerColor = CardBackground,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
+            focusedContainerColor = colors.cardBackground,
+            unfocusedContainerColor = colors.cardBackground,
+            focusedTextColor = colors.textPrimary,
+            unfocusedTextColor = colors.textPrimary,
             cursorColor = PrimaryBlue,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent
@@ -364,10 +370,11 @@ fun FilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) PrimaryBlue else CardBackground)
+            .background(if (isSelected) PrimaryBlue else colors.cardBackground)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
@@ -379,12 +386,12 @@ fun FilterChip(
                 text = text,
                 fontSize = 14.sp,
                 fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                color = Color.White
+                color = colors.textSecondary
             )
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = Color.White,
+                tint = colors.textSecondary,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -396,6 +403,7 @@ fun SummaryCards(
     totalExpense: Double,
     totalIncome: Double
 ) {
+    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -406,7 +414,7 @@ fun SummaryCards(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(CardBackground)
+                .background(colors.cardBackground)
                 .padding(16.dp)
         ) {
             Column {
@@ -414,7 +422,7 @@ fun SummaryCards(
                     text = "TỔNG CHI TIÊU",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = colors.textSecondary,
                     letterSpacing = 0.5.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -431,7 +439,7 @@ fun SummaryCards(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(CardBackground)
+                .background(colors.cardBackground)
                 .padding(16.dp)
         ) {
             Column {
@@ -439,7 +447,7 @@ fun SummaryCards(
                     text = "TỔNG THU NHẬP",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = colors.textSecondary,
                     letterSpacing = 0.5.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -458,7 +466,7 @@ fun SummaryCards(
 fun DateGroupHeader(dateGroup: String, time: String) {
     // ✅ Tính toán lại format từ dd/MM/yyyy
     val displayDate = getDisplayDateFromStored(dateGroup)
-
+    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -470,13 +478,13 @@ fun DateGroupHeader(dateGroup: String, time: String) {
             text = displayDate,  // ✅ "Hôm nay" hoặc "Thứ Hai" hoặc "05/02/2026"
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.textPrimary
         )
         Text(
             text = time,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.textPrimary
         )
     }
 }
@@ -486,11 +494,12 @@ fun HistoryTransactionItem(
     transaction: Transaction,
     onClick: () -> Unit = {}
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .padding(16.dp)
             .clickable(onClick = onClick)
     ) {
@@ -525,7 +534,7 @@ fun HistoryTransactionItem(
                         text = transaction.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White
+                        color = colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -536,7 +545,7 @@ fun HistoryTransactionItem(
                         Text(
                             text = transaction.time,
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.5f),
+                            color = colors.textSecondary,
                             maxLines = 1
                         )
 
@@ -544,12 +553,12 @@ fun HistoryTransactionItem(
                             Text(
                                 text = "•",
                                 fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.5f)
+                                color = colors.textSecondary
                             )
                             Text(
                                 text = transaction.note,
                                 fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = colors.textSecondary,
                                 maxLines = 1
                             )
                         }

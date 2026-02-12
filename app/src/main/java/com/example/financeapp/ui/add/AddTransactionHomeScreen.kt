@@ -60,6 +60,7 @@ import com.example.financeapp.ui.home.CardBackground
 import com.example.financeapp.ui.home.CategoryItem1
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -73,6 +74,7 @@ fun AddTransactionHomeScreen(
     onEditCategories: () -> Unit = {},
     financeViewModel: FinanceViewModel  // ✅ THÊM: Nhận ViewModel
 ) {
+    val colors = AppTheme.colors
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var note by remember { mutableStateOf("") }
@@ -153,7 +155,7 @@ fun AddTransactionHomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -170,14 +172,14 @@ fun AddTransactionHomeScreen(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = Color.White
+                        tint = colors.textPrimary
                     )
                 }
                 Text(
                     text = "Thêm Giao dịch",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = colors.textPrimary
                 )
                 Spacer(modifier = Modifier.width(48.dp))
             }
@@ -192,7 +194,7 @@ fun AddTransactionHomeScreen(
                 Text(
                     text = "SỐ TIỀN",
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = colors.textSecondary,
                     letterSpacing = 1.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -211,7 +213,7 @@ fun AddTransactionHomeScreen(
                     textStyle = TextStyle(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = colors.textPrimary,
                         textAlign = TextAlign.Center
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -231,7 +233,7 @@ fun AddTransactionHomeScreen(
                                         text = "500.000",
                                         fontSize = 48.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White.copy(alpha = 0.3f),
+                                        color = colors.textSecondary,
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -242,7 +244,7 @@ fun AddTransactionHomeScreen(
                                 text = "đ",
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = colors.textPrimary,
                                 modifier = Modifier.padding(end = 12.dp)
                             )
                         }
@@ -278,7 +280,7 @@ fun AddTransactionHomeScreen(
                     .wrapContentHeight()
                     .padding(horizontal = 20.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(CardBackground)
+                    .background(colors.cardBackground)
                     .clickable { isNoteEditing = true }
                     .padding(8.dp)
             ) {
@@ -288,7 +290,7 @@ fun AddTransactionHomeScreen(
                     placeholder = {
                         Text(
                             text = "Thêm ghi chú...",
-                            color = Color.Gray,
+                            color = colors.textSecondary,
                             fontSize = 14.sp
                         )
                     },
@@ -296,15 +298,15 @@ fun AddTransactionHomeScreen(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
-                            tint = Color.Gray,
+                            tint = colors.textSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary,
                         cursorColor = PrimaryBlue,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
@@ -313,7 +315,7 @@ fun AddTransactionHomeScreen(
                     singleLine = true,
                     textStyle = TextStyle(
                         fontSize = 14.sp,
-                        color = Color.White
+                        color = colors.textPrimary
                     )
                 )
             }
@@ -332,7 +334,7 @@ fun AddTransactionHomeScreen(
                     Text(
                         text = "Danh mục",
                         fontSize = 16.sp,
-                        color = Color.White,
+                        color = colors.textPrimary,
                         fontWeight = FontWeight.Medium
                     )
                     TextButton(onClick = onEditCategories) {
@@ -477,12 +479,13 @@ fun SelectionCard(
     value: String,
     onClick: () -> Unit
 ) {
+    val colors = AppTheme.colors
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
+            .background(colors.cardBackground)
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
@@ -515,14 +518,14 @@ fun SelectionCard(
                 Text(
                     text = title,
                     fontSize = 16.sp,
-                    color = Color.White
+                    color = colors.textPrimary
                 )
             }
 
             Text(
                 text = value,
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.6f)
+                color = colors.textSecondary
             )
         }
     }
