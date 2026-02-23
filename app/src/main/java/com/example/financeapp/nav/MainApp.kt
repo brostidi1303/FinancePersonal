@@ -31,6 +31,7 @@ import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.main.MainScreenDemo
 import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.ui.setting.SettingsScreen
+import com.example.financeapp.ui.stock.StockScreen
 import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.ui.theme.FinanceAppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
@@ -128,6 +129,10 @@ fun MainApp(
                     )
                 }
 
+                composable(Screen.Stock.route) {
+                    StockScreen()
+                }
+
                 // ✅ SỬA: Truyền financeViewModel vào SettingsScreen
                 composable(Screen.Profile.route) {
                     SettingsScreen(
@@ -220,4 +225,5 @@ sealed class Screen(val route: String) {
     object CreateCategory : Screen("create_category")
     object TransactionDetail : Screen("transaction_detail")  // ✅ THÊM
     object EditTransaction : Screen("edit_transaction")
+    object Stock : Screen("stock")
 }

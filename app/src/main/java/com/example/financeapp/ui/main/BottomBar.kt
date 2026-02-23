@@ -76,6 +76,14 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = currentPage == 4,
             onClick = { onTabSelected(4) },
+            icon = { Icon(painterResource(R.drawable.history), null, modifier = Modifier.size(21.dp)) },
+            label = { Text("Stock", fontSize = 11.sp) },
+            colors = navigationBarItemColors()
+        )
+
+        NavigationBarItem(
+            selected = currentPage == 5,
+            onClick = { onTabSelected(5) },
             icon = { Icon(Icons.Default.Settings, null, modifier = Modifier.size(21.dp)) },
             label = { Text("Profile", fontSize = 11.sp) },  // ✅ Sửa label từ "Report" thành "Profile"
             colors = navigationBarItemColors()

@@ -2,13 +2,16 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    kotlin("plugin.serialization") version "2.0.21"
+    id("kotlin-parcelize")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
     namespace = "com.example.financeapp"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36  // ✅ Sửa lỗi syntax
 
     defaultConfig {
         applicationId = "com.example.financeapp"
@@ -46,6 +49,25 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.7")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+
+    // ✅ Retrofit - Networking
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // ✅ OkHttp (HTTP client)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // ✅ Hilt - Dependency Injection
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.56.2")
+
+    // ✅ Hilt Navigation Compose (QUAN TRỌNG - thường bị thiếu)
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // ✅ Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

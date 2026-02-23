@@ -15,6 +15,7 @@ import com.example.financeapp.ui.add.AddTransactionHomeScreen
 import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.ui.setting.SettingsScreen
+import com.example.financeapp.ui.stock.StockScreen
 import com.example.financeapp.viewModel.FinanceViewModel
 import kotlinx.coroutines.launch
 
@@ -27,7 +28,7 @@ fun MainScreenDemo(
     onNavigateToCategoryManagement: () -> Unit = {},
     onNavigateToTransactionDetail: (Transaction) -> Unit = {}  // ✅ THÊM callback
 ) {
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 6 })
     val scope = rememberCoroutineScope()
     val transactions = financeViewModel.transactions
 
@@ -94,7 +95,9 @@ fun MainScreenDemo(
                     financeViewModel = financeViewModel
                 )
 
-                4 -> SettingsScreen(
+                4 -> StockScreen()
+
+                5 -> SettingsScreen(
                     onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
                     financeViewModel = financeViewModel
                 )

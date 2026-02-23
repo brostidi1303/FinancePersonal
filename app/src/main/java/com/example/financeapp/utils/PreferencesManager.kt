@@ -3,6 +3,7 @@ package com.example.financeapp.utils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
+import com.example.financeapp.R
 import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.google.gson.Gson
@@ -14,6 +15,7 @@ import com.google.gson.stream.JsonWriter
 import kotlin.apply
 
 class PreferencesManager(context: Context) {
+    private val context = context  // ✅ Lưu context để validate resources
     private val prefs: SharedPreferences =
         context.getSharedPreferences("finance_app_prefs", Context.MODE_PRIVATE)
 
@@ -26,7 +28,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TOTAL_BALANCE = "total_balance"
         private const val KEY_INITIAL_BALANCE = "initial_balance"
         private const val KEY_TRANSACTIONS = "transactions"
-        private const val KEY_CATEGORIES = "categories" // ✅ Thêm key cho categories
+        private const val KEY_CATEGORIES = "categories"
     }
 
     // Lưu và lấy Total Balance
@@ -53,11 +55,31 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_TRANSACTIONS, json).apply()
     }
 
-    // Lấy danh sách transactions
+    // ✅ Lấy danh sách transactions với VALIDATION
     fun getTransactions(): List<Transaction> {
         val json = prefs.getString(KEY_TRANSACTIONS, null) ?: return emptyList()
         val type = object : TypeToken<List<Transaction>>() {}.type
-        return gson.fromJson(json, type)
+
+        return try {
+            val transactions: List<Transaction> = gson.fromJson(json, type)
+
+            // ✅ Validate và fix icon IDs
+            transactions.map { transaction ->
+                val validIcon = try {
+                    // Kiểm tra xem icon có tồn tại không
+                    context.resources.getResourceName(transaction.icon)
+                    transaction.icon  // Icon hợp lệ
+                } catch (e: Exception) {
+                    // Icon không hợp lệ → dùng icon mặc định
+                    R.drawable.application
+                }
+
+                // Trả về transaction với icon đã validate
+                transaction.copy(icon = validIcon)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // ✅ Lưu danh sách categories
@@ -66,12 +88,25 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_CATEGORIES, json).apply()
     }
 
-    // ✅ Lấy danh sách categories
+    // ✅ Lấy danh sách categories với VALIDATION
     fun getCategories(): List<Category> {
         val json = prefs.getString(KEY_CATEGORIES, null) ?: return emptyList()
         val type = object : TypeToken<List<Category>>() {}.type
+
         return try {
-            gson.fromJson(json, type)
+            val categories: List<Category> = gson.fromJson(json, type)
+
+            // ✅ Validate và fix icon IDs
+            categories.map { category ->
+                val validIcon = try {
+                    context.resources.getResourceName(category.icon)
+                    category.icon
+                } catch (e: Exception) {
+                    R.drawable.application
+                }
+
+                category.copy(icon = validIcon)
+            }
         } catch (e: Exception) {
             emptyList()
         }
