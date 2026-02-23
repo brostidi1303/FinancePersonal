@@ -391,19 +391,19 @@ fun TransactionItem(transaction: Transaction) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        // Note (nếu có)
-                        if (transaction.note.isNotEmpty()) {
-                            Text(
-                                text = transaction.note,
-                                fontSize = 13.sp,
-                                color = colors.textSecondary
-                            )
-                            Text(
-                                text = "•",
-                                fontSize = 13.sp,
-                                color = colors.textSecondary
-                            )
-                        }
+//                        // Note (nếu có)
+//                        if (transaction.note.isNotEmpty()) {
+//                            Text(
+//                                text = transaction.note,
+//                                fontSize = 13.sp,
+//                                color = colors.textSecondary
+//                            )
+//                            Text(
+//                                text = "•",
+//                                fontSize = 13.sp,
+//                                color = colors.textSecondary
+//                            )
+//                        }
 
                         // Date
                         Text(

@@ -65,22 +65,7 @@ fun TransactionDetailScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-
-            // Status badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(GreenPositive.copy(alpha = 0.2f))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "THÀNH CÔNG",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GreenPositive,
-                    letterSpacing = 0.5.sp
-                )
-            }
+            Spacer(modifier = Modifier.width(48.dp))
         }
 
         LazyColumn(
@@ -96,6 +81,22 @@ fun TransactionDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Status badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GreenPositive.copy(alpha = 0.2f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "THÀNH CÔNG",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GreenPositive,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "${if (transaction.isIncome) "+" else "-"} ${formatCurrency(abs(transaction.amount))} đ",
                         fontSize = 40.sp,
@@ -163,77 +164,26 @@ fun TransactionDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Gray.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ){
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = Color.Gray,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
                             Text(
-                                text = "Ghi chú",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.6f),
+                                text = transaction.note.ifEmpty { "Không có ghi chú" },
+                                fontSize = 15.sp,
+                                color = Color.White,
                                 fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = transaction.note.ifEmpty { "Không có ghi chú" },
-                            fontSize = 14.sp,
-                            color = if (transaction.note.isEmpty())
-                                Color.White.copy(alpha = 0.4f)
-                            else
-                                Color.White,
-                            lineHeight = 20.sp
-                        )
-                    }
-                }
-            }
-
-            // Image Section (if available)
-            item {
-                Column {
-                    Text(
-                        text = "HÌNH ẢNH ĐÍNH KÈM",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Gray,
-                        letterSpacing = 0.5.sp,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(CardBackground),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Placeholder for image
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(64.dp)
-                        )
-
-                        // Zoom icon overlay
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.6f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Zoom",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }

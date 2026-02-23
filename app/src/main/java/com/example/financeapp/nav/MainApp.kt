@@ -193,6 +193,9 @@ fun MainApp(
                                 selectedTransaction = updatedTransaction
                                 navController.popBackStack()
                             },
+                            onEditCategories = {
+                                navController.navigate(Screen.CategoryManagement.route)
+                            },
                             onDelete = {
                                 financeViewModel.removeTransaction(transaction)
                                 navController.popBackStack() // thoát Edit

@@ -8,6 +8,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,8 +35,10 @@ import androidx.compose.ui.unit.sp
 import com.example.financeapp.data.Category
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.ui.home.CardBackground
+import com.example.financeapp.ui.home.CategoryItem1
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.PrimaryBlue
+import com.example.financeapp.ui.theme.AppTheme.colors
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -45,7 +50,8 @@ fun EditTransactionScreen(
     financeViewModel: FinanceViewModel,
     onDismiss: () -> Unit,
     onUpdate: (Transaction) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditCategories: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val categories = financeViewModel.categories
@@ -182,10 +188,8 @@ fun EditTransactionScreen(
                     Icons.Default.Close,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.width(4.dp))
-                Text("Hủy", color = Color.White, fontSize = 16.sp)
             }
 
             Text(
@@ -194,43 +198,7 @@ fun EditTransactionScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-
-            // Nút Cập nhật
-            TextButton(
-                onClick = {
-                    val amountValue = amount.replace(".", "").toDoubleOrNull() ?: 0.0
-                    when {
-                        amountValue <= 0 -> {
-                            errorMessage = "Vui lòng nhập số tiền hợp lệ."
-                            showErrorDialog = true
-                        }
-                        selectedCategory == null -> {
-                            errorMessage = "Vui lòng chọn một danh mục."
-                            showErrorDialog = true
-                        }
-                        else -> {
-                            onUpdate(
-                                transaction.copy(
-                                    title = selectedCategory!!.name,
-                                    amount = amountValue,
-                                    icon = selectedCategory!!.icon,
-                                    iconColor = selectedCategory!!.color,
-                                    date = dateLabel,
-                                    time = timeLabel,
-                                    note = note
-                                )
-                            )
-                        }
-                    }
-                }
-            ) {
-                Text(
-                    "Cập nhật",
-                    color = PrimaryBlue,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Spacer(modifier = Modifier.width(48.dp))
         }
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
@@ -255,7 +223,7 @@ fun EditTransactionScreen(
                     Text(
                         "Số tiền",
                         fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.6f)
+                        color = colors.textSecondary  // ✅ Sửa theme
                     )
                     Spacer(Modifier.height(8.dp))
                     BasicTextField(
@@ -272,80 +240,46 @@ fun EditTransactionScreen(
                         textStyle = TextStyle(
                             fontSize = 42.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = colors.textPrimary,  // ✅ Sửa theme
                             textAlign = TextAlign.Center
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         cursorBrush = SolidColor(PrimaryBlue),
                         singleLine = true,
                         decorationBox = { innerTextField ->
-                            Row(
+                            // ✅ THAY ĐỔI: Dùng Box thay vì Row để căn giữa toàn bộ
+                            Box(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.Bottom
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    if (amount.isEmpty()) {
-                                        Text(
-                                            "0",
-                                            fontSize = 42.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White.copy(0.3f),
-                                            textAlign = TextAlign.Center
-                                        )
+                                // ✅ Row này chỉ chứa số và "đ" - sát nhau
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (amount.isEmpty()) {
+                                            Text(
+                                                "0",
+                                                fontSize = 42.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = colors.textSecondary,  // ✅ Sửa theme
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                        innerTextField()
                                     }
-                                    innerTextField()
+                                    Text(
+                                        "đ",
+                                        fontSize = 42.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.textPrimary,  // ✅ Sửa theme
+                                        modifier = Modifier.offset(x = (-10).dp)  // ✅ Giảm từ 4.dp xuống 2.dp
+                                    )
                                 }
-                                Text(
-                                    "đ",
-                                    fontSize = 42.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
                             }
                         }
                     )
-                }
-            }
-
-            // ── HẠNG MỤC ──
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Hạng mục",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    TextButton(onClick = {}) {
-                        Text("Xem tất cả", color = PrimaryBlue, fontSize = 14.sp)
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-
-                // Hiển thị 4 category đầu tiên
-                val display = categories.take(4)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    display.forEach { category ->
-                        EditCategoryItem(
-                            category = category,
-                            isSelected = selectedCategory?.id == category.id,
-                            onClick = { selectedCategory = category },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // Điền placeholder nếu ít hơn 4
-                    repeat(maxOf(0, 4 - display.size)) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
                 }
             }
 
@@ -423,79 +357,122 @@ fun EditTransactionScreen(
                 }
             }
 
-            // ── ẢNH ĐÍNH KÈM ──
+            // ── HẠNG MỤC ──
             item {
-                Box(
+                // Category Section
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CardBackground)
-                        .padding(16.dp)
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            EditIconBox(Icons.Default.Settings)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Danh mục",
+                            fontSize = 16.sp,
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.Medium
+                        )
+                        TextButton(onClick = onEditCategories) {
                             Text(
-                                "Ảnh đính kèm",
-                                fontSize = 16.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
+                                text = "Chỉnh sửa",
+                                color = PrimaryBlue,
+                                fontSize = 14.sp
                             )
                         }
-                        Spacer(Modifier.height(12.dp))
-                        // Nút thêm ảnh
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(
-                                    1.5.dp,
-                                    Color.White.copy(0.25f),
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable { /* TODO: pick image */ },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Settings,
-                                    contentDescription = null,
-                                    tint = Color.White.copy(0.5f),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    "THÊM ẢNH",
-                                    fontSize = 9.sp,
-                                    color = Color.White.copy(0.5f),
-                                    letterSpacing = 0.5.sp
-                                )
-                            }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // ✅ SỬA: Dùng categories từ ViewModel
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.height(200.dp)
+                    ) {
+                        items(categories) { category ->  // ✅ Thay APP_CATEGORIES thành categories
+                            CategoryItem1(
+                                category = category,
+                                isSelected = selectedCategory == category,
+                                onClick = { selectedCategory = category }
+                            )
                         }
                     }
                 }
             }
+        }
+        // Action Buttons
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Edit Button
+            Button(
+                onClick = {
+                    val amountValue = amount.replace(".", "").toDoubleOrNull() ?: 0.0
+                    when {
+                        amountValue <= 0 -> {
+                            errorMessage = "Vui lòng nhập số tiền hợp lệ."
+                            showErrorDialog = true
+                        }
+                        selectedCategory == null -> {
+                            errorMessage = "Vui lòng chọn một danh mục."
+                            showErrorDialog = true
+                        }
+                        else -> {
+                            onUpdate(
+                                transaction.copy(
+                                    title = selectedCategory!!.name,
+                                    amount = amountValue,
+                                    icon = selectedCategory!!.icon,
+                                    iconColor = selectedCategory!!.color,
+                                    date = dateLabel,
+                                    time = timeLabel,
+                                    note = note
+                                )
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Cập nhật",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-            // ── XÓA GIAO DỊCH ──
-            item {
-                OutlinedButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-                    border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.6f)),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Xóa giao dịch này", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
+            OutlinedButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.6f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(Icons.Default.Delete, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Xóa giao dịch này", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

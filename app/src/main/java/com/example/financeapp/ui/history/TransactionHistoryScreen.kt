@@ -261,25 +261,23 @@ fun HistoryHeader(onBack: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = colors.textPrimary,
-                modifier = Modifier.size(24.dp)
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close",
+                tint = colors.textPrimary
             )
         }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
         Text(
-            text = "Lịch sử Giao dịch",
+            text = "Lịch sử giao dịch",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = colors.textPrimary
         )
+        Spacer(modifier = Modifier.width(48.dp))
     }
 }
 
