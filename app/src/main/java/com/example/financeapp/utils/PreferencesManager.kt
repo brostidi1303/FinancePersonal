@@ -12,14 +12,17 @@ import com.google.gson.TypeAdapter
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
-import kotlin.apply
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PreferencesManager(context: Context) {
-    private val context = context  // ✅ Lưu context để validate resources
+@Singleton
+class PreferencesManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("finance_app_prefs", Context.MODE_PRIVATE)
 
-    // Gson với custom TypeAdapter cho Color
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapter(Color::class.java, ColorTypeAdapter())
         .create()
@@ -29,9 +32,19 @@ class PreferencesManager(context: Context) {
         private const val KEY_INITIAL_BALANCE = "initial_balance"
         private const val KEY_TRANSACTIONS = "transactions"
         private const val KEY_CATEGORIES = "categories"
+        private const val KEY_AUTH_TOKEN = "auth_token" // Bổ sung key cho token
     }
 
-    // Lưu và lấy Total Balance
+    // ✅ Bổ sung hàm lấy Token cho AuthInterceptor
+    fun getAuthToken(): String? {
+        return prefs.getString(KEY_AUTH_TOKEN, null)
+    }
+
+    fun saveAuthToken(token: String) {
+        prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
+    }
+
+    // Các hàm còn lại giữ nguyên như code cũ của bạn
     fun saveTotalBalance(balance: Double) {
         prefs.edit().putFloat(KEY_TOTAL_BALANCE, balance.toFloat()).apply()
     }
@@ -40,7 +53,6 @@ class PreferencesManager(context: Context) {
         return prefs.getFloat(KEY_TOTAL_BALANCE, 0f).toDouble()
     }
 
-    // Lưu và lấy Initial Balance
     fun saveInitialBalance(balance: Double) {
         prefs.edit().putFloat(KEY_INITIAL_BALANCE, balance.toFloat()).apply()
     }
@@ -49,32 +61,23 @@ class PreferencesManager(context: Context) {
         return prefs.getFloat(KEY_INITIAL_BALANCE, 0f).toDouble()
     }
 
-    // Lưu danh sách transactions
     fun saveTransactions(transactions: List<Transaction>) {
         val json = gson.toJson(transactions)
         prefs.edit().putString(KEY_TRANSACTIONS, json).apply()
     }
 
-    // ✅ Lấy danh sách transactions với VALIDATION
     fun getTransactions(): List<Transaction> {
         val json = prefs.getString(KEY_TRANSACTIONS, null) ?: return emptyList()
         val type = object : TypeToken<List<Transaction>>() {}.type
-
         return try {
             val transactions: List<Transaction> = gson.fromJson(json, type)
-
-            // ✅ Validate và fix icon IDs
             transactions.map { transaction ->
                 val validIcon = try {
-                    // Kiểm tra xem icon có tồn tại không
                     context.resources.getResourceName(transaction.icon)
-                    transaction.icon  // Icon hợp lệ
+                    transaction.icon
                 } catch (e: Exception) {
-                    // Icon không hợp lệ → dùng icon mặc định
-                    R.drawable.application
+                    R.drawable.application // Nhớ import R đúng package
                 }
-
-                // Trả về transaction với icon đã validate
                 transaction.copy(icon = validIcon)
             }
         } catch (e: Exception) {
@@ -82,21 +85,16 @@ class PreferencesManager(context: Context) {
         }
     }
 
-    // ✅ Lưu danh sách categories
     fun saveCategories(categories: List<Category>) {
         val json = gson.toJson(categories)
         prefs.edit().putString(KEY_CATEGORIES, json).apply()
     }
 
-    // ✅ Lấy danh sách categories với VALIDATION
     fun getCategories(): List<Category> {
         val json = prefs.getString(KEY_CATEGORIES, null) ?: return emptyList()
         val type = object : TypeToken<List<Category>>() {}.type
-
         return try {
             val categories: List<Category> = gson.fromJson(json, type)
-
-            // ✅ Validate và fix icon IDs
             categories.map { category ->
                 val validIcon = try {
                     context.resources.getResourceName(category.icon)
@@ -104,7 +102,6 @@ class PreferencesManager(context: Context) {
                 } catch (e: Exception) {
                     R.drawable.application
                 }
-
                 category.copy(icon = validIcon)
             }
         } catch (e: Exception) {
@@ -112,28 +109,24 @@ class PreferencesManager(context: Context) {
         }
     }
 
-    // ✅ THÊM 2 hàm này vào PreferencesManager
     fun saveDarkMode(isDark: Boolean) {
         prefs.edit().putBoolean("dark_mode", isDark).apply()
     }
 
     fun getDarkMode(): Boolean {
-        return prefs.getBoolean("dark_mode", true) // default: dark
+        return prefs.getBoolean("dark_mode", true)
     }
 
-    // Clear all data
     fun clearAll() {
         prefs.edit().clear().apply()
     }
 }
 
-// Custom TypeAdapter để serialize/deserialize Color
 class ColorTypeAdapter : TypeAdapter<Color>() {
     override fun write(out: JsonWriter, value: Color?) {
         if (value == null) {
             out.nullValue()
         } else {
-            // Lưu Color dưới dạng hex string
             out.value(String.format("#%08X", value.value.toInt()))
         }
     }
@@ -143,7 +136,7 @@ class ColorTypeAdapter : TypeAdapter<Color>() {
         return try {
             Color(android.graphics.Color.parseColor(colorString))
         } catch (e: Exception) {
-            Color.Gray // Default color nếu parse lỗi
+            Color.Gray
         }
     }
 }

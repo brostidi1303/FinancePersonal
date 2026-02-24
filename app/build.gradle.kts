@@ -23,6 +23,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        buildConfig = true  // ✅ Enable BuildConfig
+        compose = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -68,6 +73,13 @@ dependencies {
     // ✅ Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+
+    // Chucker (Network Inspector - chỉ dùng cho debug)
+    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
+
+    // Timber (Logging)
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

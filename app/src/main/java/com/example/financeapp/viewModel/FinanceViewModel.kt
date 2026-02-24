@@ -2,25 +2,37 @@ package com.example.financeapp.viewModel
 
 import android.app.Application
 import android.icu.text.SimpleDateFormat
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financeapp.data.APP_CATEGORIES
+import com.example.financeapp.data.AnomaliesResponse
 import com.example.financeapp.data.Category
+import com.example.financeapp.data.NarrativeResponse
+import com.example.financeapp.data.RegimeHistoryResponse
+import com.example.financeapp.data.RegimeResponse
 import com.example.financeapp.utils.PreferencesManager
 import com.example.financeapp.data.Transaction
+import com.example.financeapp.di.api.FinanceApiService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.internal.notifyAll
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 
-class FinanceViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val prefsManager = PreferencesManager(application)
+@HiltViewModel
+class FinanceViewModel @Inject constructor(
+    private val prefsManager: PreferencesManager,
+    private val apiService: FinanceApiService // ✅ Inject API Service
+) : ViewModel() { // ✅ Dùng ViewModel thuần thay vì AndroidViewModel
 
     // State cho balance
     private val _totalBalance = MutableStateFlow(0.0)
@@ -41,8 +53,43 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     private val _isDarkMode = MutableStateFlow(true)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
+    // ==================== API STATES ====================
+    private val _marketRegime = MutableStateFlow<RegimeResponse?>(null)
+    val marketRegime: StateFlow<RegimeResponse?> = _marketRegime.asStateFlow()
+
+    // ✅ NEW: State cho history data
+    private val _marketRegimeHistory = MutableStateFlow<RegimeHistoryResponse?>(null)
+    val marketRegimeHistory: StateFlow<RegimeHistoryResponse?> = _marketRegimeHistory.asStateFlow()
+
+    private val _anomalies = MutableStateFlow<AnomaliesResponse?>(null)
+    val anomalies: StateFlow<AnomaliesResponse?> = _anomalies.asStateFlow()
+    // ✅ NEW: State cho ngày được chọn
+    private val _selectedAnomalyDate = MutableStateFlow<String?>(null)
+    val selectedAnomalyDate: StateFlow<String?> = _selectedAnomalyDate.asStateFlow()
+
+    private val _narrative = MutableStateFlow<NarrativeResponse?>(null)
+    val narrative: StateFlow<NarrativeResponse?> = _narrative.asStateFlow()
+
+    private val _selectedNarrativeDate = MutableStateFlow<String?>(null)
+    val selectedNarrativeDate: StateFlow<String?> = _selectedNarrativeDate.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _isHistoryLoading = MutableStateFlow(false)
+    val isHistoryLoading: StateFlow<Boolean> = _isHistoryLoading.asStateFlow()
+
+    private val _isAnomaliesLoading = MutableStateFlow(false)
+    val isAnomaliesLoading: StateFlow<Boolean> = _isAnomaliesLoading.asStateFlow()
+
+    private val _isNarrativeLoading = MutableStateFlow(false)
+    val isNarrativeLoading: StateFlow<Boolean> = _isNarrativeLoading.asStateFlow()
+
     init {
         loadData()
+        fetchMarketRegime()
+        fetchMarketRegimeHistory() // ✅ Gọi history khi khởi tạo
+        fetchAnomalies()
+        fetchNarrative()
     }
 
     /**
@@ -69,6 +116,119 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             _isDarkMode.value = prefsManager.getDarkMode()
         }
     }
+
+    // ✅ Hàm gọi API
+    fun fetchMarketRegime() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = apiService.getMarketRegime()
+                if (response.isSuccessful) {
+                    _marketRegime.value = response.body()
+                } else {
+                    Log.e("FinanceViewModel", "API Error: ${response.code()}")
+                    _marketRegime.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Network Exception", e)
+                _marketRegime.value = null
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // ✅ NEW: Hàm gọi API history (7 ngày gần nhất)
+    fun fetchMarketRegimeHistory(days: Int = 90) {
+        viewModelScope.launch {
+            _isHistoryLoading.value = true
+            try {
+                val response = apiService.getMarketRegimeHistory(days)
+                if (response.isSuccessful) {
+                    _marketRegimeHistory.value = response.body()
+                    Log.d("FinanceViewModel", "History loaded: ${response.body()?.history?.size} items")
+                } else {
+                    Log.e("FinanceViewModel", "History API Error: ${response.code()}")
+                    _marketRegimeHistory.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "History Network Exception", e)
+                _marketRegimeHistory.value = null
+            } finally {
+                _isHistoryLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Gọi API anomalies
+     * @param targetDate Format "yyyy-MM-dd" (VD: "2026-02-13")
+     * Nếu null, API sẽ trả về ngày gần nhất
+     */
+    fun fetchAnomalies(targetDate: String? = null) {
+        viewModelScope.launch {
+            _isAnomaliesLoading.value = true
+            _selectedAnomalyDate.value = targetDate
+
+            try {
+                val response = apiService.getAnomalies(targetDate)
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    _anomalies.value = data
+
+                    if (data == null || data.anomalies.isEmpty()) {
+                        Log.w("FinanceViewModel", "No anomalies data for date: $targetDate")
+                    } else {
+                        Log.d("FinanceViewModel", "Anomalies loaded: ${data.anomalies.size} items for date: ${data.date}")
+                    }
+                } else {
+                    Log.e("FinanceViewModel", "Anomalies API Error: ${response.code()}")
+                    _anomalies.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Anomalies Network Exception", e)
+                _anomalies.value = null
+            } finally {
+                _isAnomaliesLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ Gọi API Nhận định AI
+     */
+    fun fetchNarrative(targetDate: String? = null) {
+        viewModelScope.launch {
+            _isNarrativeLoading.value = true
+            _selectedNarrativeDate.value = targetDate
+            try {
+                val response = apiService.getNarrative(targetDate)
+                if (response.isSuccessful) {
+                    _narrative.value = response.body()
+                } else {
+                    Log.e("FinanceViewModel", "Narrative API Error: ${response.code()}")
+                    _narrative.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Narrative Network Exception", e)
+                _narrative.value = null
+            } finally {
+                _isNarrativeLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ NEW: Reset về ngày hiện tại (không có targetDate)
+     */
+    fun resetAnomaliesDate() {
+        fetchAnomalies(null)
+    }
+
+    fun resetNarrativeDate() {
+        fetchNarrative(null)
+    }
+
 
     // ==================== CATEGORY MANAGEMENT ====================
 

@@ -95,7 +95,10 @@ fun MainScreenDemo(
                     financeViewModel = financeViewModel
                 )
 
-                4 -> StockScreen()
+                4 -> StockScreen(
+                    financeViewModel,
+                    onBack =  { scope.launch { pagerState.animateScrollToPage(0) } }
+                )
 
                 5 -> SettingsScreen(
                     onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
