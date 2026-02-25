@@ -118,3 +118,125 @@ data class NarrativeResponse(
     @SerializedName("supporting_articles")
     val supportingArticles: List<Int>
 )
+
+/**
+ * Response từ API /news/all
+ */
+data class NewsAllResponse(
+    val news: List<NewsArticle>,
+    val limit: Int,
+    val offset: Int
+)
+
+/**
+ * Response từ API /news
+ */
+data class NewsResponse(
+    val date: String,
+    val news: List<NewsArticle>,
+    @SerializedName("total_articles")
+    val totalArticles: Int,
+    val message: String?
+)
+
+/**
+ * Một bài báo trong danh sách news
+ */
+data class NewsArticle(
+    val title: String,
+    val sentiment: String,          // "POSITIVE", "NEGATIVE", "NEUTRAL"
+    @SerializedName("sentiment_score")
+    val sentimentScore: Double,
+    val sector: String?,
+    val impact: String?,
+    val confidence: String?,
+    val url: String,
+    val source: String,             // "CafeF", "VietStock", etc.
+    @SerializedName("published_at")
+    val publishedAt: String
+) {
+    /**
+     * Format published_at thành "2 giờ trước", "5 phút trước", etc.
+     */
+    fun getRelativeTime(): String {
+        return try {
+            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", java.util.Locale.getDefault())
+            val date = inputFormat.parse(publishedAt)
+
+            if (date != null) {
+                val now = java.util.Calendar.getInstance().timeInMillis
+                val diff = now - date.time
+
+                val minutes = diff / 60000
+                val hours = diff / 3600000
+                val days = diff / 86400000
+
+                when {
+                    minutes < 1 -> "Vừa xong"
+                    minutes < 60 -> "$minutes phút trước"
+                    hours < 24 -> "$hours giờ trước"
+                    days < 30 -> "$days ngày trước"
+                    else -> {
+                        val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                        outputFormat.format(date)
+                    }
+                }
+            } else {
+                publishedAt
+            }
+        } catch (e: Exception) {
+            publishedAt
+        }
+    }
+
+    /**
+     * Unique identifier cho mỗi bài báo (dùng để loại bỏ duplicate)
+     */
+    fun getUniqueId(): String {
+        return "$url-$publishedAt"
+    }
+}
+
+/**
+ * Response từ API /news/by-sector/{sector}
+ */
+data class NewsBySectorResponse(
+    val sector: String,
+    val news: List<NewsArticle>
+)
+
+/**
+ * Danh sách các sector phổ biến để suggest
+ */
+object CommonSectors {
+    val list = listOf(
+        "Ngân hàng",
+        "Bất động sản",
+        "Chứng khoán",
+        "Công nghệ",
+        "Dầu khí",
+        "Thép",
+        "Dệt may",
+        "Thủy sản",
+        "Cao su",
+        "Điện",
+        "Xây dựng",
+        "Viễn thông",
+        "Hàng tiêu dùng",
+        "Y tế",
+        "Hóa chất",
+        "Khoáng sản",
+        "Logistics",
+        "Bảo hiểm",
+        "Du lịch",
+        "Thực phẩm"
+    )
+}
+
+/**
+ * Response từ API /news/by-sector/{sector}
+ */
+data class NewsBySymbolResponse(
+    val symbol: String,
+    val news: List<NewsArticle>
+)

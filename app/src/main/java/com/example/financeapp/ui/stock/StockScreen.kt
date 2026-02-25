@@ -1,6 +1,9 @@
 package com.example.financeapp.ui.stock
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.*
+import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,20 +14,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.financeapp.data.Anomaly
+import com.example.financeapp.data.NarrativeResponse
+import com.example.financeapp.data.NewsArticle
+import com.example.financeapp.data.NewsResponse
 import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
@@ -36,27 +47,34 @@ private val WarningOrange = Color(0xFFF57C00)
 // ─── Semantic Colors ───────────────────────────────────────────────────────
 private val AccentBlue    = Color(0xFF2979FF)
 private val AccentCyan    = Color(0xFF00BFFF)
-private val PositiveGreen = Color(0xFF4FC3F7)
+private val PositiveGreen = Color(0xFF00A137)
 private val NegativeRed   = Color(0xFFEF5350)
 
 // ─── Main Screen ───────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockScreen(viewModel: FinanceViewModel, onBack: () -> Unit) {
+fun StockScreen(
+    viewModel: FinanceViewModel, onBack: () -> Unit,
+    onNavigateToNews: () -> Unit
+) {
     val marketRegime by viewModel.marketRegime.collectAsStateWithLifecycle()
     val marketHistory by viewModel.marketRegimeHistory.collectAsStateWithLifecycle()
     val anomalies by viewModel.anomalies.collectAsStateWithLifecycle()
     val selectedAnomalyDate by viewModel.selectedAnomalyDate.collectAsStateWithLifecycle()
     val narrative by viewModel.narrative.collectAsStateWithLifecycle()
     val selectedNarrativeDate by viewModel.selectedNarrativeDate.collectAsStateWithLifecycle()
+    val news by viewModel.news.collectAsStateWithLifecycle()
+    val selectedNewsDate by viewModel.selectedNewsDate.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isHistoryLoading by viewModel.isHistoryLoading.collectAsStateWithLifecycle()
     val isAnomaliesLoading by viewModel.isAnomaliesLoading.collectAsStateWithLifecycle()
     val isNarrativeLoading by viewModel.isNarrativeLoading.collectAsStateWithLifecycle()
-
+    val isNewsLoading by viewModel.isNewsLoading.collectAsStateWithLifecycle()
     // ✅ DatePicker state
     var showDatePickerAnomaly by remember { mutableStateOf(false) }
     var showDatePickerNarrative by remember { mutableStateOf(false) }
+    //var showDatePickerNews by remember { mutableStateOf(false) }
+    var isNewsExpanded by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
     val colors = AppTheme.colors
     Box(
@@ -389,10 +407,28 @@ fun StockScreen(viewModel: FinanceViewModel, onBack: () -> Unit) {
                         AiAnalysisSection(
                             narrative = narrative,
                             isLoading = isNarrativeLoading,
-                            onClick = { showDatePickerNarrative = true }
+                            isLoadingNews = isNewsLoading,
+                            onClick = { showDatePickerNarrative = true },
+                            news = news,
+                            isExpanded = isNewsExpanded,
+                            onExpandToggle = { isNewsExpanded = !isNewsExpanded },
+                            onViewAllClick = { onNavigateToNews() }
+                            //onDateClick = { showDatePickerNews = true }
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
+
+//                    // ✅ NEW: News Section
+//                    item {
+//                        NewsSection(
+//                            news = news,
+//                            isLoading = isNewsLoading,
+//                            isExpanded = isNewsExpanded,
+//                            onExpandToggle = { isNewsExpanded = !isNewsExpanded },
+//                            onDateClick = { showDatePickerNews = true }
+//                        )
+//                        Spacer(modifier = Modifier.height(32.dp))
+//                    }
                 }
             } ?: Text(
                 text = "Không có dữ liệu hoặc lỗi kết nối",
@@ -513,6 +549,60 @@ fun StockScreen(viewModel: FinanceViewModel, onBack: () -> Unit) {
                 )
             }
         }
+
+//        // ✅ DatePicker Dialog - News
+//        if (showDatePickerNews) {
+//            DatePickerDialog(
+//                onDismissRequest = { showDatePickerNews = false },
+//                confirmButton = {
+//                    TextButton(
+//                        onClick = {
+//                            datePickerState.selectedDateMillis?.let { millis ->
+//                                val calendar = Calendar.getInstance().apply {
+//                                    timeInMillis = millis
+//                                }
+//                                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+//                                val targetDate = dateFormat.format(calendar.time)
+//                                viewModel.fetchNews(targetDate)
+//                            }
+//                            showDatePickerNews = false
+//                        }
+//                    ) {
+//                        Text("Xác nhận", color = AccentBlue)
+//                    }
+//                },
+//                dismissButton = {
+//                    TextButton(
+//                        onClick = {
+//                            viewModel.resetNewsDate()
+//                            showDatePickerNews = false
+//                        }
+//                    ) {
+//                        Text("Hôm nay", color = colors.textSecondary)
+//                    }
+//                }
+//            ) {
+//                DatePicker(
+//                    state = datePickerState,
+//                    colors = DatePickerDefaults.colors(
+//                        containerColor = colors.cardBackground,
+//                        titleContentColor = colors.textPrimary,
+//                        headlineContentColor = colors.textPrimary,
+//                        weekdayContentColor = colors.textSecondary,
+//                        subheadContentColor = colors.textPrimary,
+//                        yearContentColor = colors.textPrimary,
+//                        currentYearContentColor = AccentBlue,
+//                        selectedYearContentColor = Color.White,
+//                        selectedYearContainerColor = AccentBlue,
+//                        dayContentColor = colors.textPrimary,
+//                        selectedDayContentColor = Color.White,
+//                        selectedDayContainerColor = AccentBlue,
+//                        todayContentColor = AccentBlue,
+//                        todayDateBorderColor = AccentBlue
+//                    )
+//                )
+//            }
+//        }
     }
 }
 
@@ -832,9 +922,23 @@ fun DetailItem(label: String, value: String, color: Color) {
 
 // ─── AI Analysis Section (NEW UI) ──────────────────────────────────────────
 @Composable
-fun AiAnalysisSection(narrative: com.example.financeapp.data.NarrativeResponse?, isLoading: Boolean, onClick: () -> Unit) {
+fun AiAnalysisSection(
+    narrative: NarrativeResponse?,
+    isLoading: Boolean,
+    isLoadingNews: Boolean,
+    onClick: () -> Unit,
+    news: NewsResponse?,
+    isExpanded: Boolean,
+    onExpandToggle: () -> Unit,
+    onViewAllClick: () -> Unit
+    //onDateClick: () -> Unit
+) {
     val colors = AppTheme.colors
-
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(300),
+        label = "arrow_rotation"
+    )
     Column(modifier = Modifier.fillMaxWidth()) {
         SectionHeader("NHẬN ĐỊNH THỊ TRƯỜNG (AI)")
         Spacer(modifier = Modifier.height(12.dp))
@@ -933,11 +1037,10 @@ fun AiAnalysisSection(narrative: com.example.financeapp.data.NarrativeResponse?,
                         lineHeight = 24.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     HorizontalDivider(color = colors.divider, thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // --- Dòng 3: Footer (Báo cáo liên quan) ---
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -945,23 +1048,69 @@ fun AiAnalysisSection(narrative: com.example.financeapp.data.NarrativeResponse?,
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .clickable { onExpandToggle() }
+                                .padding(4.dp)
                         ) {
                             Text("📄", fontSize = 14.sp)
                             Text(
-                                text = "Các bài báo liên quan: ${narrative.supportingArticles.size ?: 0}",
+//                                text = "Các bài báo liên quan: ${narrative.supportingArticles.size ?: 0}",
+                                text = "Các bài báo có ảnh hưởng",
                                 fontSize = 13.sp,
-                                color = colors.textSecondary
+                                fontWeight = FontWeight.Medium,
+                                color = AccentBlue
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                tint = AccentBlue,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .rotate(rotationAngle)
                             )
                         }
 
-                        Text(
-                            text = "Xem tất cả >",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = AccentBlue,
-                            modifier = Modifier.clickable { /* Xử lý chuyển trang báo */ }
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.clickable {
+                                onViewAllClick()
+                            }
+                                .padding(4.dp)
+                        ) {
+                            Text(
+                                text = "Xem tất cả",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = AccentBlue
+                            )
+
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowRight,
+                                contentDescription ="Expand",
+                                tint = AccentBlue,
+                                modifier = Modifier
+                                    .size(20.dp)
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            news!!.news.forEach { article ->
+                                NewsArticleCard(article = article)
+                            }
+                        }
                     }
                 }
             } else {
@@ -976,6 +1125,100 @@ fun AiAnalysisSection(narrative: com.example.financeapp.data.NarrativeResponse?,
                         fontSize = 13.sp
                     )
                 }
+            }
+        }
+    }
+}
+
+// ✅ NEW: News Article Card Component
+@Composable
+fun NewsArticleCard(article: NewsArticle) {
+    val colors = AppTheme.colors
+    val context = LocalContext.current
+
+    val sentimentColor = when (article.sentiment.uppercase()) {
+        "POSITIVE" -> PositiveGreen
+        "NEGATIVE" -> NegativeRed
+        else -> WarningOrange
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(article.url))
+                context.startActivity(intent)
+            },
+        shape = RoundedCornerShape(8.dp),
+        color = colors.cardBackground,
+        border = androidx.compose.foundation.BorderStroke(1.dp, colors.divider)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = article.title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.textPrimary,
+                lineHeight = 20.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = AccentBlue.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = article.source,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AccentBlue,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+
+                    Text(
+                        text = article.getRelativeTime(),
+                        fontSize = 11.sp,
+                        color = colors.textSecondary
+                    )
+                }
+
+                Surface(
+                    shape = CircleShape,
+                    color = sentimentColor.copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        sentimentColor.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(sentimentColor, CircleShape)
+                    )
+                }
+            }
+
+            if (article.sector!!.isNotBlank()) {
+                Text(
+                    text = "📊 ${article.sector}",
+                    fontSize = 11.sp,
+                    color = colors.textSecondary,
+                    fontWeight = FontWeight.Normal
+                )
             }
         }
     }

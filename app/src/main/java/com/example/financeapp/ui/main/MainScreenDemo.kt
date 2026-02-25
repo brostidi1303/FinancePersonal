@@ -26,7 +26,8 @@ fun MainScreenDemo(
     onPageChanged: (Int) -> Unit,
     targetPage: Int,
     onNavigateToCategoryManagement: () -> Unit = {},
-    onNavigateToTransactionDetail: (Transaction) -> Unit = {}  // ✅ THÊM callback
+    onNavigateToTransactionDetail: (Transaction) -> Unit = {},  // ✅ THÊM callback
+    onNavigateToNews: () -> Unit = {}
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 6 })
     val scope = rememberCoroutineScope()
@@ -97,7 +98,8 @@ fun MainScreenDemo(
 
                 4 -> StockScreen(
                     financeViewModel,
-                    onBack =  { scope.launch { pagerState.animateScrollToPage(0) } }
+                    onBack =  { scope.launch { pagerState.animateScrollToPage(0) } },
+                    onNavigateToNews = onNavigateToNews
                 )
 
                 5 -> SettingsScreen(

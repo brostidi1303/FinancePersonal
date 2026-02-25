@@ -30,6 +30,7 @@ import com.example.financeapp.ui.add.TransactionDetailScreen
 import com.example.financeapp.ui.home.DarkBackground
 import com.example.financeapp.ui.home.FinanceApp
 import com.example.financeapp.ui.main.MainScreenDemo
+import com.example.financeapp.ui.news.NewsScreen
 import com.example.financeapp.ui.report.StatisticsReportScreen
 import com.example.financeapp.ui.setting.SettingsScreen
 import com.example.financeapp.ui.stock.StockScreen
@@ -88,6 +89,9 @@ fun MainApp(
                         onNavigateToTransactionDetail = { transaction ->
                             selectedTransaction = transaction
                             navController.navigate(Screen.TransactionDetail.route)
+                        },
+                        onNavigateToNews = {
+                            navController.navigate(Screen.News.route)
                         }
                     )
                 }
@@ -133,7 +137,8 @@ fun MainApp(
                 composable(Screen.Stock.route) {
                     StockScreen(
                         financeViewModel,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onNavigateToNews = { navController.navigate(Screen.News.route) }
                     )
                 }
 
@@ -213,6 +218,17 @@ fun MainApp(
                         )
                     }
                 }
+
+                composable(Screen.News.route) {
+                    NewsScreen(
+                        viewModel = financeViewModel,
+                        onBack = {
+                            navController.popBackStack()
+                            // Reset state khi quay lại
+                            financeViewModel.resetAllNews()
+                        }
+                    )
+                }
             }
         }
     }
@@ -230,4 +246,5 @@ sealed class Screen(val route: String) {
     object TransactionDetail : Screen("transaction_detail")  // ✅ THÊM
     object EditTransaction : Screen("edit_transaction")
     object Stock : Screen("stock")
+    object News : Screen("news")  // ✅ THÊM route mới
 }

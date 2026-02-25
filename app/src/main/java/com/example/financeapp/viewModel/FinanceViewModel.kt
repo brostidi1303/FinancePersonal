@@ -13,12 +13,17 @@ import com.example.financeapp.data.APP_CATEGORIES
 import com.example.financeapp.data.AnomaliesResponse
 import com.example.financeapp.data.Category
 import com.example.financeapp.data.NarrativeResponse
+import com.example.financeapp.data.NewsArticle
+import com.example.financeapp.data.NewsBySectorResponse
+import com.example.financeapp.data.NewsBySymbolResponse
+import com.example.financeapp.data.NewsResponse
 import com.example.financeapp.data.RegimeHistoryResponse
 import com.example.financeapp.data.RegimeResponse
 import com.example.financeapp.utils.PreferencesManager
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.di.api.FinanceApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,6 +77,12 @@ class FinanceViewModel @Inject constructor(
 
     private val _selectedNarrativeDate = MutableStateFlow<String?>(null)
     val selectedNarrativeDate: StateFlow<String?> = _selectedNarrativeDate.asStateFlow()
+
+    private val _news = MutableStateFlow<NewsResponse?>(null)
+    val news: StateFlow<NewsResponse?> = _news.asStateFlow()
+
+    private val _selectedNewsDate = MutableStateFlow<String?>(null)
+    val selectedNewsDate: StateFlow<String?> = _selectedNewsDate.asStateFlow()
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -84,12 +95,47 @@ class FinanceViewModel @Inject constructor(
     private val _isNarrativeLoading = MutableStateFlow(false)
     val isNarrativeLoading: StateFlow<Boolean> = _isNarrativeLoading.asStateFlow()
 
+    private val _isNewsLoading = MutableStateFlow(false)
+    val isNewsLoading: StateFlow<Boolean> = _isNewsLoading.asStateFlow()
+
+    // ==================== NEWS ALL STATES ====================
+
+    private val _allNews = MutableStateFlow<List<NewsArticle>>(emptyList())
+    val allNews: StateFlow<List<NewsArticle>> = _allNews.asStateFlow()
+
+    private val _isAllNewsLoading = MutableStateFlow(false)
+    val isAllNewsLoading: StateFlow<Boolean> = _isAllNewsLoading.asStateFlow()
+
+    private val _hasMoreNews = MutableStateFlow(true)
+    val hasMoreNews: StateFlow<Boolean> = _hasMoreNews.asStateFlow()
+
+    private val _newsBySector = MutableStateFlow<NewsBySectorResponse?>(null)
+    val newsBySector: StateFlow<NewsBySectorResponse?> = _newsBySector.asStateFlow()
+
+    private val _isSectorNewsLoading = MutableStateFlow(false)
+    val isSectorNewsLoading: StateFlow<Boolean> = _isSectorNewsLoading.asStateFlow()
+
+    private val _currentSearchSector = MutableStateFlow<String?>(null)
+    val currentSearchSector: StateFlow<String?> = _currentSearchSector.asStateFlow()
+
+    private val _newsBySymbol = MutableStateFlow<NewsBySymbolResponse?>(null)
+    val newsBySymbol: StateFlow<NewsBySymbolResponse?> = _newsBySymbol.asStateFlow()
+
+    private val _isSymbolNewsLoading = MutableStateFlow(false)
+    val isSymbolNewsLoading: StateFlow<Boolean> = _isSymbolNewsLoading.asStateFlow()
+
+    private val _currentSearchSymbol = MutableStateFlow<String?>(null)
+    val currentSearchSymbol: StateFlow<String?> = _currentSearchSymbol.asStateFlow()
+
     init {
         loadData()
         fetchMarketRegime()
-        fetchMarketRegimeHistory() // ✅ Gọi history khi khởi tạo
+        fetchMarketRegimeHistory()
         fetchAnomalies()
         fetchNarrative()
+        //fetchNews()
+        fetchAllNews()
+        hasMoreNews
     }
 
     /**
@@ -197,25 +243,329 @@ class FinanceViewModel @Inject constructor(
     /**
      * ✅ Gọi API Nhận định AI
      */
+//    fun fetchNarrative(targetDate: String? = null) {
+//        viewModelScope.launch {
+//            _isNarrativeLoading.value = true
+//            _selectedNarrativeDate.value = targetDate
+//            try {
+//                val response = apiService.getNarrative(targetDate)
+//                if (response.isSuccessful) {
+//                    _narrative.value = response.body()
+//                } else {
+//                    Log.e("FinanceViewModel", "Narrative API Error: ${response.code()}")
+//                    _narrative.value = null
+//                }
+//            } catch (e: Exception) {
+//                Log.e("FinanceViewModel", "Narrative Network Exception", e)
+//                _narrative.value = null
+//            } finally {
+//                _isNarrativeLoading.value = false
+//            }
+//        }
+//    }
+
     fun fetchNarrative(targetDate: String? = null) {
         viewModelScope.launch {
             _isNarrativeLoading.value = true
             _selectedNarrativeDate.value = targetDate
+
             try {
                 val response = apiService.getNarrative(targetDate)
                 if (response.isSuccessful) {
-                    _narrative.value = response.body()
+                    val data = response.body()
+                    _narrative.value = data
+
+                    if (data != null) {
+                        Log.d("FinanceViewModel", "Narrative loaded for date: ${data.date}")
+
+                        // ✅ TỰ ĐỘNG gọi news với cùng ngày
+                        fetchNews(data.date)
+                    } else {
+                        Log.w("FinanceViewModel", "No narrative data for date: $targetDate")
+                        _news.value = null
+                    }
                 } else {
                     Log.e("FinanceViewModel", "Narrative API Error: ${response.code()}")
                     _narrative.value = null
+                    _news.value = null
                 }
             } catch (e: Exception) {
                 Log.e("FinanceViewModel", "Narrative Network Exception", e)
                 _narrative.value = null
+                _news.value = null
             } finally {
                 _isNarrativeLoading.value = false
             }
         }
+    }
+
+    /**
+     * ✅ Gọi API tin tức
+     */
+//    fun fetchNews(targetDate: String? = null) {
+//        viewModelScope.launch {
+//            _isNewsLoading.value = true
+//            _selectedNewsDate.value = targetDate
+//            try {
+//                val response = apiService.getNews(targetDate)
+//                if (response.isSuccessful) {
+//                    _news.value = response.body()
+//                    Log.d("FinanceViewModel", "News loaded: ${response.body()?.news?.size} articles")
+//                } else {
+//                    Log.e("FinanceViewModel", "News API Error: ${response.code()}")
+//                    _news.value = null
+//                }
+//            } catch (e: Exception) {
+//                Log.e("FinanceViewModel", "News Network Exception", e)
+//                _news.value = null
+//            } finally {
+//                _isNewsLoading.value = false
+//            }
+//        }
+//    }
+    /**
+     * ✅ UPDATED: Gọi API news (được gọi tự động từ fetchNarrative)
+     */
+    fun fetchNews(targetDate: String? = null) {
+        viewModelScope.launch {
+            _isNewsLoading.value = true
+            _selectedNewsDate.value = targetDate
+
+            try {
+                val response = apiService.getNews(targetDate)
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    _news.value = data
+
+                    if (data == null || data.news.isEmpty()) {
+                        Log.w("FinanceViewModel", "No news data for date: $targetDate")
+                    } else {
+                        Log.d("FinanceViewModel", "News loaded: ${data.news.size} items for date: ${data.date}")
+                    }
+                } else {
+                    Log.e("FinanceViewModel", "News API Error: ${response.code()}")
+                    _news.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "News Network Exception", e)
+                _news.value = null
+            } finally {
+                _isNewsLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ NEW: Fetch all news từ offset 1000 về 0
+     * Load tất cả tin tức và loại bỏ duplicate
+     */
+    fun fetchAllNews() {
+        viewModelScope.launch {
+            _isAllNewsLoading.value = true
+            _allNews.value = emptyList()
+
+            val allArticles = mutableListOf<NewsArticle>()
+            val seenIds = mutableSetOf<String>()
+
+            // ✅ Bắt đầu từ 0 (Tin mới nhất)
+            var currentOffset = 0
+            val maxOffset = 250 // Giới hạn số lượng tin muốn lấy
+
+            while (currentOffset <= maxOffset) {
+                try {
+                    Log.d("FinanceViewModel1", "Fetching news at offset: $currentOffset")
+
+                    val response = apiService.getAllNews(
+                        limit = 100,
+                        offset = currentOffset
+                    )
+
+                    if (response.isSuccessful) {
+                        val data = response.body()
+
+                        if (data != null && data.news.isNotEmpty()) {
+                            // Lọc duplicate
+                            data.news.forEach { article ->
+                                val uniqueId = article.getUniqueId()
+                                if (!seenIds.contains(uniqueId)) {
+                                    seenIds.add(uniqueId)
+                                    // Add thẳng vào mảng vì data đã xếp sẵn từ mới -> cũ
+                                    allArticles.add(article)
+                                }
+                            }
+
+                            // Không cần sort nữa, gán thẳng cho State
+                            _allNews.value = allArticles.toList()
+
+                            Log.d("FinanceViewModel1", "Loaded ${data.news.size} articles, total unique: ${allArticles.size}")
+                        } else {
+                            // ✅ NẾU HẾT TIN: API trả về rỗng -> Dừng luôn vòng lặp, không cần chạy tiếp lên 250
+                            Log.d("FinanceViewModel1", "Hết dữ liệu ở offset $currentOffset. Dừng tải.")
+                            break
+                        }
+                    } else {
+                        Log.e("FinanceViewModel1", "News API Error at offset $currentOffset: ${response.code()}")
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("FinanceViewModel1", "Lỗi mạng tại offset $currentOffset: ${e.message}")
+                }
+
+                // ✅ Cộng thêm 100 để lấy trang tiếp theo (cũ hơn)
+                currentOffset += 2
+
+                // Nghỉ 0.5s để không bị block IP
+                delay(500)
+            }
+
+            Log.d("FinanceViewModel1", "Finished loading all news. Total unique articles: ${allArticles.size}")
+            _hasMoreNews.value = false
+            _isAllNewsLoading.value = false
+        }
+    }
+
+    /**
+     * ✅ NEW: Load more news (pagination)
+     * Dùng khi user scroll đến cuối danh sách
+     */
+    fun loadMoreNews(currentOffset: Int) {
+        viewModelScope.launch {
+            if (_isAllNewsLoading.value || !_hasMoreNews.value) return@launch
+
+            _isAllNewsLoading.value = true
+
+            try {
+                val response = apiService.getAllNews(
+                    limit = 100,
+                    offset = currentOffset
+                )
+
+                if (response.isSuccessful) {
+                    val data = response.body()
+
+                    if (data != null && data.news.isNotEmpty()) {
+                        val currentList = _allNews.value.toMutableList()
+                        val seenIds = currentList.map { it.getUniqueId() }.toSet()
+
+                        // Thêm tin mới, loại bỏ duplicate
+                        data.news.forEach { article ->
+                            val uniqueId = article.getUniqueId()
+                            if (!seenIds.contains(uniqueId)) {
+                                currentList.add(article)
+                            }
+                        }
+
+                        _allNews.value = currentList
+                    } else {
+                        _hasMoreNews.value = false
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Error loading more news", e)
+            } finally {
+                _isAllNewsLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ Gọi API tin tức theo sector
+     * @param sector Tên sector (VD: "Ngân hàng", "Công nghệ")
+     */
+    fun fetchNewsBySector(sector: String) {
+        // Nếu sector trống, không làm gì
+        if (sector.isBlank()) {
+            _newsBySector.value = null
+            _currentSearchSector.value = null
+            return
+        }
+
+        viewModelScope.launch {
+            _isSectorNewsLoading.value = true
+            _currentSearchSector.value = sector
+
+            try {
+                // XÓA dòng encode thủ công này
+                // val encodedSector = java.net.URLEncoder.encode(sector.trim(), "UTF-8")
+
+                // Truyền trực tiếp chuỗi gốc đã trim khoảng trắng thừa
+                val response = apiService.getNewsBySector(sector.trim())
+
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    _newsBySector.value = data
+
+                    Log.d("FinanceViewModel", "Sector news loaded: ${data?.news?.size} articles for sector: ${data?.sector}")
+                } else {
+                    Log.e("FinanceViewModel", "Sector news API Error: ${response.code()}")
+                    _newsBySector.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Sector news Network Exception", e)
+                _newsBySector.value = null
+            } finally {
+                _isSectorNewsLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Gọi API tin tức theo mã cổ phiếu
+     * @param symbol Mã cổ phiếu (VD: "BSR")
+     */
+    fun fetchNewsBySymbol(symbol: String) {
+        if (symbol.isBlank()) {
+            clearSymbolSearch()
+            return
+        }
+
+        viewModelScope.launch {
+            _isSymbolNewsLoading.value = true
+            _currentSearchSymbol.value = symbol.uppercase() // Chuẩn hóa mã cổ phiếu thành chữ hoa
+
+            try {
+                // Truyền symbol đã bỏ khoảng trắng
+                val response = apiService.getNewsBySymbol(symbol.trim())
+
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    _newsBySymbol.value = data
+                    Log.d("FinanceViewModel", "Symbol news loaded: ${data?.news?.size} articles for ${data?.symbol}")
+                } else {
+                    Log.e("FinanceViewModel", "Symbol news API Error: ${response.code()}")
+                    _newsBySymbol.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Symbol news Network Exception", e)
+                _newsBySymbol.value = null
+            } finally {
+                _isSymbolNewsLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Xóa kết quả tìm kiếm theo mã cổ phiếu
+     */
+    fun clearSymbolSearch() {
+        _newsBySymbol.value = null
+        _currentSearchSymbol.value = null
+    }
+
+    /**
+     * ✅ Clear sector search
+     */
+    fun clearSectorSearch() {
+        _newsBySector.value = null
+        _currentSearchSector.value = null
+    }
+
+    /**
+     * ✅ NEW: Reset all news state
+     */
+    fun resetAllNews() {
+        _allNews.value = emptyList()
+        _hasMoreNews.value = true
     }
 
     /**
@@ -229,6 +579,9 @@ class FinanceViewModel @Inject constructor(
         fetchNarrative(null)
     }
 
+    fun resetNewsDate() {
+        fetchNews(null)
+    }
 
     // ==================== CATEGORY MANAGEMENT ====================
 
