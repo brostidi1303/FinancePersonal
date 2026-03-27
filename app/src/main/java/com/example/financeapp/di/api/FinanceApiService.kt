@@ -8,6 +8,7 @@ import com.example.financeapp.data.NewsBySymbolResponse
 import com.example.financeapp.data.NewsResponse
 import com.example.financeapp.data.RegimeHistoryResponse
 import com.example.financeapp.data.RegimeResponse
+import com.example.financeapp.data.TensionResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -76,4 +77,9 @@ interface FinanceApiService {
     suspend fun getNewsBySymbol(
         @Path("symbol") symbol: String
     ): Response<NewsBySymbolResponse>
+
+    @GET("tension")
+    suspend fun getTension(
+        @Query("target_date") targetDate: String? = null
+    ): Response<TensionResponse>
 }

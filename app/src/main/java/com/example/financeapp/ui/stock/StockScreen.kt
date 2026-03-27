@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,19 +37,22 @@ import com.example.financeapp.data.Anomaly
 import com.example.financeapp.data.NarrativeResponse
 import com.example.financeapp.data.NewsArticle
 import com.example.financeapp.data.NewsResponse
+import com.example.financeapp.data.TensionData
+import com.example.financeapp.ui.stock.componets.HistoryLineChart
+import com.example.financeapp.ui.stock.componets.formatDateLabel
+import com.example.financeapp.ui.stock.componets.formatDisplayDate
 import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
-private val WarningOrange = Color(0xFFF57C00)
-
+val WarningOrange = Color(0xFFF57C00)
 // ─── Semantic Colors ───────────────────────────────────────────────────────
-private val AccentBlue    = Color(0xFF2979FF)
-private val AccentCyan    = Color(0xFF00BFFF)
-private val PositiveGreen = Color(0xFF00A137)
-private val NegativeRed   = Color(0xFFEF5350)
+val AccentBlue    = Color(0xFF2979FF)
+val AccentCyan    = Color(0xFF00BFFF)
+val PositiveGreen = Color(0xFF00A137)
+val NegativeRed   = Color(0xFFEF5350)
 
 // ─── Main Screen ───────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +69,8 @@ fun StockScreen(
     val selectedNarrativeDate by viewModel.selectedNarrativeDate.collectAsStateWithLifecycle()
     val news by viewModel.news.collectAsStateWithLifecycle()
     val selectedNewsDate by viewModel.selectedNewsDate.collectAsStateWithLifecycle()
+    val tension by viewModel.tension.collectAsStateWithLifecycle()
+    val isTensionLoading by viewModel.isTensionLoading.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isHistoryLoading by viewModel.isHistoryLoading.collectAsStateWithLifecycle()
     val isAnomaliesLoading by viewModel.isAnomaliesLoading.collectAsStateWithLifecycle()
@@ -254,34 +260,7 @@ fun StockScreen(
                     item {
                         SectionHeader("TÍN HIỆU BẤT THƯỜNG (TOP 3)")
                         Spacer(modifier = Modifier.height(12.dp))
-//                        // Date picker button
-//                        Row(
-//                            modifier = Modifier
-//                                .clip(RoundedCornerShape(8.dp))
-//                                .background(colors.cardBackground)
-//                                .clickable { showDatePicker = true }
-//                                .padding(horizontal = 10.dp, vertical = 6.dp),
-//                            verticalAlignment = Alignment.CenterVertically,
-//                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-//                        ) {
-//                            Icon(
-//                                imageVector = Icons.Default.DateRange,
-//                                contentDescription = "Chọn ngày",
-//                                tint = AccentBlue,
-//                                modifier = Modifier.size(16.dp)
-//                            )
-//                            Text(
-//                                text = if (selectedAnomalyDate != null) {
-//                                    formatDisplayDate(selectedAnomalyDate!!)
-//                                } else {
-//                                    "Hôm nay"
-//                                },
-//                                fontSize = 12.sp,
-//                                color = colors.textPrimary,
-//                                fontWeight = FontWeight.Medium
-//                            )
-//                        }
-//                        Spacer(modifier = Modifier.height(12.dp))
+
                         if (isAnomaliesLoading) {
                             Box(
                                 modifier = Modifier
@@ -312,10 +291,11 @@ fun StockScreen(
                                             fontSize = 11.sp,
                                             color = colors.textSecondary,
                                             fontWeight = FontWeight.Normal,
-                                            modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                                            .background(colors.cardBackground)
-                                            .clickable { showDatePickerAnomaly = true }
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(colors.cardBackground)
+                                                .clickable { showDatePickerAnomaly = true }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
                                         )
 
                                         top3.forEach { anomaly ->
@@ -337,7 +317,8 @@ fun StockScreen(
                                                 fontSize = 11.sp,
                                                 color = colors.textSecondary,
                                                 fontWeight = FontWeight.Normal,
-                                                modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
                                                     .background(colors.cardBackground)
                                                     .clickable { showDatePickerAnomaly = true }
                                                     .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -417,18 +398,11 @@ fun StockScreen(
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
-
-//                    // ✅ NEW: News Section
-//                    item {
-//                        NewsSection(
-//                            news = news,
-//                            isLoading = isNewsLoading,
-//                            isExpanded = isNewsExpanded,
-//                            onExpandToggle = { isNewsExpanded = !isNewsExpanded },
-//                            onDateClick = { showDatePickerNews = true }
-//                        )
-//                        Spacer(modifier = Modifier.height(32.dp))
-//                    }
+                    // ✅ THÊM BLOCK NÀY VÀO ĐÂY
+                    item {
+                        RiskWarningSection(tensionData = tension!!.tension)
+                        Spacer(modifier = Modifier.height(32.dp)) // Spacer cách đáy màn hình
+                    }
                 }
             } ?: Text(
                 text = "Không có dữ liệu hoặc lỗi kết nối",
@@ -549,88 +523,6 @@ fun StockScreen(
                 )
             }
         }
-
-//        // ✅ DatePicker Dialog - News
-//        if (showDatePickerNews) {
-//            DatePickerDialog(
-//                onDismissRequest = { showDatePickerNews = false },
-//                confirmButton = {
-//                    TextButton(
-//                        onClick = {
-//                            datePickerState.selectedDateMillis?.let { millis ->
-//                                val calendar = Calendar.getInstance().apply {
-//                                    timeInMillis = millis
-//                                }
-//                                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-//                                val targetDate = dateFormat.format(calendar.time)
-//                                viewModel.fetchNews(targetDate)
-//                            }
-//                            showDatePickerNews = false
-//                        }
-//                    ) {
-//                        Text("Xác nhận", color = AccentBlue)
-//                    }
-//                },
-//                dismissButton = {
-//                    TextButton(
-//                        onClick = {
-//                            viewModel.resetNewsDate()
-//                            showDatePickerNews = false
-//                        }
-//                    ) {
-//                        Text("Hôm nay", color = colors.textSecondary)
-//                    }
-//                }
-//            ) {
-//                DatePicker(
-//                    state = datePickerState,
-//                    colors = DatePickerDefaults.colors(
-//                        containerColor = colors.cardBackground,
-//                        titleContentColor = colors.textPrimary,
-//                        headlineContentColor = colors.textPrimary,
-//                        weekdayContentColor = colors.textSecondary,
-//                        subheadContentColor = colors.textPrimary,
-//                        yearContentColor = colors.textPrimary,
-//                        currentYearContentColor = AccentBlue,
-//                        selectedYearContentColor = Color.White,
-//                        selectedYearContainerColor = AccentBlue,
-//                        dayContentColor = colors.textPrimary,
-//                        selectedDayContentColor = Color.White,
-//                        selectedDayContainerColor = AccentBlue,
-//                        todayContentColor = AccentBlue,
-//                        todayDateBorderColor = AccentBlue
-//                    )
-//                )
-//            }
-//        }
-    }
-}
-
-/**
- * Format date từ "2026-02-09" thành "09/02"
- */
-private fun formatDateLabel(dateString: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("dd/MM", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        date?.let { outputFormat.format(it) } ?: dateString
-    } catch (e: Exception) {
-        dateString
-    }
-}
-
-/**
- * Format date từ "2026-02-09" thành "09/02/2026"
- */
-private fun formatDisplayDate(dateString: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        date?.let { outputFormat.format(it) } ?: dateString
-    } catch (e: Exception) {
-        dateString
     }
 }
 
@@ -764,7 +656,9 @@ fun RegimeBadge(regime: String) {
 fun NhanDinhCard(description: String) {
     val colors = AppTheme.colors
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
         color = colors.cardBackground,
         border = androidx.compose.foundation.BorderStroke(1.dp, colors.divider)
@@ -949,9 +843,10 @@ fun AiAnalysisSection(
                 fontSize = 11.sp,
                 color = colors.textSecondary,
                 fontWeight = FontWeight.Normal,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
                     .background(colors.cardBackground)
-                    .clickable{
+                    .clickable {
                         onClick()
                     }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -969,7 +864,9 @@ fun AiAnalysisSection(
             if (isLoading) {
                 // Hiệu ứng Loading
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = AccentCyan, modifier = Modifier.size(32.dp))
@@ -1074,9 +971,10 @@ fun AiAnalysisSection(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.clickable {
-                                onViewAllClick()
-                            }
+                            modifier = Modifier
+                                .clickable {
+                                    onViewAllClick()
+                                }
                                 .padding(4.dp)
                         ) {
                             Text(
@@ -1116,7 +1014,9 @@ fun AiAnalysisSection(
             } else {
                 // Trạng thái trống (Không có data)
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -1234,7 +1134,9 @@ fun SectionHeader(title: String) {
         fontWeight = FontWeight.SemiBold,
         color = colors.textSecondary,
         letterSpacing = 1.5.sp,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     )
 }
 
@@ -1295,88 +1197,187 @@ fun ComponentRow(icon: String, label: String, value: Double, maxAbs: Double) {
     }
 }
 
-// ─── History Line Chart ────────────────────────────────────────────────────
+// ─── Risk Warning Section (UI Cảnh báo rủi ro) ─────────────────────────────
 @Composable
-fun HistoryLineChart(points: List<Float>, labels: List<String>) {
+fun RiskWarningSection(tensionData: TensionData?) { // Đổi thành TensionData? (có thể null)
     val colors = AppTheme.colors
-    val animProgress by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(1400, easing = EaseOutCubic),
-        label = "chart_anim"
-    )
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = colors.cardBackground,
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.divider)
-    ) {
-        Box(modifier = Modifier.padding(12.dp)) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                if (points.size < 2) return@Canvas
+    // Tính toán màu cho Tiêu đề (Nếu không có data thì dùng màu trung tính)
+    val titleColor = if (tensionData != null) {
+        when {
+            tensionData.severity >= 0.7 -> NegativeRed
+            tensionData.severity >= 0.4 -> WarningOrange
+            else -> PositiveGreen
+        }
+    } else colors.textSecondary
 
-                val minY = points.min()
-                val maxY = points.max()
-                val rangeY = (maxY - minY).coerceAtLeast(1f)
-                val stepX = size.width / (points.size - 1)
-                val chartH = size.height * 0.75f
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "CẢNH BÁO RỦI RO",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = titleColor,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        )
 
-                fun xAt(i: Int) = i * stepX
-                fun yAt(v: Float) = chartH - ((v - minY) / rangeY) * chartH
+        Spacer(modifier = Modifier.height(12.dp))
 
-                val path = Path()
-                val drawCount = (points.size * animProgress).toInt().coerceAtLeast(2)
-
-                points.take(drawCount).forEachIndexed { i, v ->
-                    if (i == 0) path.moveTo(xAt(i), yAt(v))
-                    else {
-                        val cx = (xAt(i - 1) + xAt(i)) / 2
-                        path.cubicTo(cx, yAt(points[i - 1]), cx, yAt(v), xAt(i), yAt(v))
-                    }
-                }
-
-                val fillPath = Path().apply {
-                    addPath(path)
-                    lineTo(xAt(drawCount - 1), chartH)
-                    lineTo(0f, chartH)
-                    close()
-                }
-                drawPath(
-                    fillPath,
-                    Brush.verticalGradient(
-                        listOf(AccentBlue.copy(alpha = 0.35f), Color.Transparent),
-                        endY = chartH
+        if (tensionData == null) {
+            // ─── TRẠNG THÁI KHÔNG CÓ CẢNH BÁO (EMPTY STATE) ───
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = colors.cardBackground,
+                border = androidx.compose.foundation.BorderStroke(1.dp, colors.divider)
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = "✅", fontSize = 32.sp)
+                    Text(
+                        text = "Chưa có cảnh báo hôm nay",
+                        color = colors.textPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
                     )
-                )
-
-                drawPath(
-                    path,
-                    brush = Brush.horizontalGradient(listOf(AccentBlue, AccentCyan)),
-                    style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                )
-
-                val lastX = xAt(drawCount - 1)
-                val lastY = yAt(points[drawCount - 1])
-                drawCircle(AccentCyan, 5.dp.toPx(), Offset(lastX, lastY))
-                drawCircle(Color.White, 2.5.dp.toPx(), Offset(lastX, lastY))
+                    Text(
+                        text = "Thị trường hiện không có tín hiệu rủi ro đáng kể.",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            // ─── TRẠNG THÁI CÓ CẢNH BÁO (DỮ LIỆU BÌNH THƯỜNG) ───
+            val (severityLabel, severityColor) = when {
+                tensionData.severity >= 0.7 -> "MỨC ĐỘ: CAO" to NegativeRed
+                tensionData.severity >= 0.4 -> "MỨC ĐỘ: TB" to WarningOrange
+                else -> "MỨC ĐỘ: THẤP" to PositiveGreen
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomStart),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = colors.cardBackground,
+                border = androidx.compose.foundation.BorderStroke(1.dp, severityColor.copy(alpha = 0.3f))
             ) {
-                labels.forEach { lbl ->
-                    Text(
-                        text = lbl,
-                        fontSize = 9.sp,
-                        color = if (lbl == "Hôm nay") AccentCyan else colors.textSecondary,
-                        fontWeight = if (lbl == "Hôm nay") FontWeight.Bold else FontWeight.Normal
-                    )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // --- Dòng 1: Tiêu đề cảnh báo & Badge Mức độ ---
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                        Row(modifier = Modifier.weight(1f)) {
+                            Text(text = "⚠️", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
+                            Column {
+                                Text(
+                                    text = tensionData.headline,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary,
+                                    lineHeight = 22.sp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = tensionData.type,
+                                    fontSize = 12.sp,
+                                    color = severityColor,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        // Badge Mức độ
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = severityColor.copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, severityColor.copy(alpha = 0.3f)),
+                            modifier = Modifier.padding(start = 12.dp)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = severityLabel,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = severityColor
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "(${String.format("%.3f", tensionData.severity)})",
+                                    fontSize = 11.sp,
+                                    color = severityColor
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // --- Dòng 2: Số liệu Biến động ---
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "BIẾN ĐỘNG CHỈ SỐ",
+                                fontSize = 10.sp, color = colors.textSecondary, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val pct = tensionData.details.indexChangePct ?: 0.0
+                            Text(
+                                text = "${if (pct > 0) "+" else ""}${pct}%",
+                                fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                                color = if (pct > 0) PositiveGreen else NegativeRed
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ĐỘ RỘNG THỊ TRƯỜNG",
+                                fontSize = 10.sp, color = colors.textSecondary, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val breadth = tensionData.details.breadth ?: 0.0
+                            Text(
+                                text = String.format("%.3f", breadth),
+                                fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                                color = if (breadth > 0) PositiveGreen else NegativeRed
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // --- Dòng 3: Nhận định chi tiết ---
+                    tensionData.details.advancesVsDeclines?.let {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text(
+                                text = "CHI TIẾT",
+                                fontSize = 10.sp, color = colors.textSecondary, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp,
+                                modifier = Modifier.padding(top = 3.dp, end = 8.dp)
+                            )
+                            Text(
+                                text = it,
+                                fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary, lineHeight = 20.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+
+                    // --- Dòng 4: Action (Box Advice) ---
+                    tensionData.details.warning?.let {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.background.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = "\"$it\"",
+                                fontSize = 14.sp, fontStyle = FontStyle.Italic, color = AccentCyan.copy(alpha = 0.9f),
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

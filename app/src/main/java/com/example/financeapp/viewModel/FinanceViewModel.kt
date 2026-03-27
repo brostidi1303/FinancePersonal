@@ -19,6 +19,7 @@ import com.example.financeapp.data.NewsBySymbolResponse
 import com.example.financeapp.data.NewsResponse
 import com.example.financeapp.data.RegimeHistoryResponse
 import com.example.financeapp.data.RegimeResponse
+import com.example.financeapp.data.TensionResponse
 import com.example.financeapp.utils.PreferencesManager
 import com.example.financeapp.data.Transaction
 import com.example.financeapp.di.api.FinanceApiService
@@ -127,6 +128,14 @@ class FinanceViewModel @Inject constructor(
     private val _currentSearchSymbol = MutableStateFlow<String?>(null)
     val currentSearchSymbol: StateFlow<String?> = _currentSearchSymbol.asStateFlow()
 
+    // ==================== TENSION ALL STATES ====================
+
+    private val _tension = MutableStateFlow<TensionResponse?>(null)
+    val tension: StateFlow<TensionResponse?> = _tension.asStateFlow()
+
+    private val _isTensionLoading = MutableStateFlow(false)
+    val isTensionLoading: StateFlow<Boolean> = _isTensionLoading.asStateFlow()
+
     init {
         loadData()
         fetchMarketRegime()
@@ -135,7 +144,7 @@ class FinanceViewModel @Inject constructor(
         fetchNarrative()
         //fetchNews()
         fetchAllNews()
-        hasMoreNews
+        fetchTension()
     }
 
     /**
@@ -540,6 +549,27 @@ class FinanceViewModel @Inject constructor(
                 _newsBySymbol.value = null
             } finally {
                 _isSymbolNewsLoading.value = false
+            }
+        }
+    }
+
+    fun fetchTension(targetDate: String? = null) {
+        viewModelScope.launch {
+            _isTensionLoading.value = true
+            try {
+                val response = apiService.getTension(targetDate)
+                if (response.isSuccessful) {
+                    _tension.value = response.body()
+                    Log.d("FinanceViewModel", "Tension loaded for date: ${response.body()?.date}")
+                } else {
+                    Log.e("FinanceViewModel", "Tension API Error: ${response.code()}")
+                    _tension.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("FinanceViewModel", "Tension Network Exception", e)
+                _tension.value = null
+            } finally {
+                _isTensionLoading.value = false
             }
         }
     }

@@ -240,3 +240,26 @@ data class NewsBySymbolResponse(
     val symbol: String,
     val news: List<NewsArticle>
 )
+
+data class TensionResponse(
+    val date: String,
+    val tension: TensionData? // Có thể null nếu ngày đó không có rủi ro
+)
+
+data class TensionData(
+    val type: String,
+    val headline: String,
+    val details: TensionDetails,
+    @SerializedName("watch_level")
+    val watchLevel: Double,
+    val severity: Double
+)
+
+data class TensionDetails(
+    @SerializedName("index_change_pct")
+    val indexChangePct: Double?,
+    val breadth: Double?,
+    @SerializedName("advances_vs_declines")
+    val advancesVsDeclines: String?,
+    val warning: String?
+)
