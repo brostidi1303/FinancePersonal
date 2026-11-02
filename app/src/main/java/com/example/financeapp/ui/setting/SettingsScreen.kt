@@ -18,6 +18,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.financeapp.BuildConfig
+import com.example.financeapp.analytics.FirebaseDebugViewModel
 import com.example.financeapp.ui.theme.AppTheme
 import com.example.financeapp.viewModel.FinanceViewModel
 
@@ -30,6 +35,10 @@ fun SettingsScreen(
 ) {
     // ✅ Đọc isDarkMode từ ViewModel — tự động recompose khi thay đổi
     val isDarkMode by financeViewModel.isDarkMode.collectAsState()
+
+    // ✅ Chỉ dùng cho khu vực test Firebase ở bản debug
+    val context = LocalContext.current
+    val debugViewModel: FirebaseDebugViewModel = hiltViewModel()
 
     // ✅ Màu sắc thay đổi theo theme hiện tại
     val colors = AppTheme.colors
@@ -226,6 +235,39 @@ fun SettingsScreen(
                     HorizontalDivider(color = dividerColor, modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsRow(Icons.Default.Settings, Color(0xFFFF6B6B), "Sao lưu & Phục hồi",
                         colors.textPrimary, textGray, onClick = {})
+                }
+            }
+
+
+            // ── FIREBASE (chỉ bản debug) ──
+            if (BuildConfig.DEBUG) {
+                item {
+                    Text("FIREBASE (DEBUG)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                        color = sectionGray, letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp))
+                }
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(colors.cardBackground)
+                    ) {
+                        SettingsRow(Icons.Default.Send, Color(0xFF3B82F6), "Gửi test event Analytics",
+                            colors.textPrimary, textGray, onClick = {
+                                debugViewModel.sendTestEvent()
+                                Toast.makeText(context, "Đã gửi debug_test_event", Toast.LENGTH_SHORT).show()
+                            })
+                        HorizontalDivider(color = dividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(Icons.Default.Info, Color(0xFFF59E0B), "Gửi non-fatal Crashlytics",
+                            colors.textPrimary, textGray, onClick = {
+                                debugViewModel.sendNonFatal()
+                                Toast.makeText(context, "Đã gửi non-fatal", Toast.LENGTH_SHORT).show()
+                            })
+                        HorizontalDivider(color = dividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(Icons.Default.Warning, Color(0xFFEF4444), "Tạo crash thử",
+                            colors.textPrimary, textGray, onClick = { debugViewModel.triggerTestCrash() })
+                    }
                 }
             }
 

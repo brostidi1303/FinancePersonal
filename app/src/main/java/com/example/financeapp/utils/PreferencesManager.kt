@@ -33,6 +33,7 @@ class PreferencesManager @Inject constructor(
         private const val KEY_TRANSACTIONS = "transactions"
         private const val KEY_CATEGORIES = "categories"
         private const val KEY_AUTH_TOKEN = "auth_token" // Bổ sung key cho token
+        private const val KEY_CRASHLYTICS_DEBUG = "crashlytics_debug_enabled"
     }
 
     // ✅ Bổ sung hàm lấy Token cho AuthInterceptor
@@ -115,6 +116,18 @@ class PreferencesManager @Inject constructor(
 
     fun getDarkMode(): Boolean {
         return prefs.getBoolean("dark_mode", true)
+    }
+
+    /**
+     * Cờ chỉ dùng khi TEST Crashlytics trên bản debug.
+     * Bật lên trước khi tạo crash thử, để lần mở app kế tiếp report được gửi đi.
+     */
+    fun setCrashlyticsDebugEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_CRASHLYTICS_DEBUG, enabled).apply()
+    }
+
+    fun isCrashlyticsDebugEnabled(): Boolean {
+        return prefs.getBoolean(KEY_CRASHLYTICS_DEBUG, false)
     }
 
     fun clearAll() {

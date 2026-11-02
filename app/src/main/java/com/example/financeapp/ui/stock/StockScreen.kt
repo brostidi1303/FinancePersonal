@@ -92,11 +92,18 @@ fun StockScreen(
         if (isLoading) {
             CircularProgressIndicator(color = AccentCyan)
         } else {
-            marketRegime?.let { data ->
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // ✅ Sàng lọc kế hoạch mua — dùng API công khai VNDirect/SSI,
+                // đặt ngoài marketRegime?.let để vẫn chạy khi backend nội bộ lỗi.
+                item {
+                    BuyPlanSection()
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                marketRegime?.let { data ->
                     item {
                         Row(
                             modifier = Modifier
@@ -399,15 +406,20 @@ fun StockScreen(
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                     // ✅ THÊM BLOCK NÀY VÀO ĐÂY
-                    item {
-                        RiskWarningSection(tensionData = tension!!.tension)
-                        Spacer(modifier = Modifier.height(32.dp)) // Spacer cách đáy màn hình
+                    tension?.tension?.let { tensionData ->
+                        item {
+                            RiskWarningSection(tensionData = tensionData)
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
                     }
+                } ?: item {
+                    Text(
+                        text = "Không có dữ liệu hoặc lỗi kết nối",
+                        color = NegativeRed
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
-            } ?: Text(
-                text = "Không có dữ liệu hoặc lỗi kết nối",
-                color = NegativeRed
-            )
+            }
         }
 
         // ✅ DatePicker Dialog

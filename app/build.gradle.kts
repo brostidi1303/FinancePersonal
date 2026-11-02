@@ -7,6 +7,10 @@ plugins {
     id("kotlin-parcelize")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+
+    // ✅ Firebase
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -29,6 +33,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // ✅ Không upload mapping file cho debug -> build nhanh hơn
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -54,6 +64,11 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.7")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+
+    // ✅ Firebase - BoM giữ mọi artifact firebase-* cùng version, KHÔNG khai version lẻ
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     // ✅ Retrofit - Networking
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
